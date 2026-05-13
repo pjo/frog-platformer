@@ -42,12 +42,18 @@
             @touchstart.prevent="mobileKey('ArrowLeft', true)"
             @touchend.prevent="mobileKey('ArrowLeft', false)"
             @touchcancel.prevent="mobileKey('ArrowLeft', false)"
+            @mousedown.prevent="mobileKey('ArrowLeft', true)"
+            @mouseup.prevent="mobileKey('ArrowLeft', false)"
+            @mouseleave.prevent="mobileKey('ArrowLeft', false)"
           >&#9664;</button>
           <button
             class="mobile-btn"
             @touchstart.prevent="mobileKey('ArrowRight', true)"
             @touchend.prevent="mobileKey('ArrowRight', false)"
             @touchcancel.prevent="mobileKey('ArrowRight', false)"
+            @mousedown.prevent="mobileKey('ArrowRight', true)"
+            @mouseup.prevent="mobileKey('ArrowRight', false)"
+            @mouseleave.prevent="mobileKey('ArrowRight', false)"
           >&#9654;</button>
         </div>
         <div class="mobile-right">
@@ -56,6 +62,9 @@
             @touchstart.prevent="mobileKey('Space', true)"
             @touchend.prevent="mobileKey('Space', false)"
             @touchcancel.prevent="mobileKey('Space', false)"
+            @mousedown.prevent="mobileKey('Space', true)"
+            @mouseup.prevent="mobileKey('Space', false)"
+            @mouseleave.prevent="mobileKey('Space', false)"
           >JUMP</button>
         </div>
       </div>

@@ -100,10 +100,11 @@ import type { Platform, Enemy, Fly, Hazard, CP, Particle, PowerUp, LeaderEntry }
 import { useAudio } from '../composables/useAudio'
 import { buildSpriteSheet, blit, aframe, SPRITE } from '../composables/useSpriteSheet'
 import { intersects, circleHitsRect } from '../utils/physics'
+import { ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS } from '../utils/constants'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const VIEWPORT_W = 1280
-const VIEWPORT_H = 720
+const VIEWPORT_W = ENGINE.VIEWPORT_W
+const VIEWPORT_H = ENGINE.VIEWPORT_H
 const LEVEL_COUNT = LEVELS.length
 const STORAGE_KEY = 'frog-lb-v2'
 
@@ -222,12 +223,12 @@ let particles: Particle[] = []
 let spriteSheet: HTMLImageElement | null = null
 
 // ── Mutable world ─────────────────────────────────────────────────────────────
-const world = { width: 5200, height: 720, gravity: 0.55, cameraX: 0, bgOffset: 0, fgOffset: 0 }
-const checkpoint = { x: 160 }
+const world = { width: 5200, height: ENGINE.VIEWPORT_H, gravity: ENGINE.GRAVITY, cameraX: 0, bgOffset: 0, fgOffset: 0 }
+const checkpoint = { x: PLAYER_CFG.START_X }
 const player = {
-  x: 160, y: 360, w: 54, h: 54,
-  vx: 0, vy: 0, maxSpeed: 6.6, accel: 0.72,
-  dragGround: 0.82, dragAir: 0.92, jumpForce: 14.5,
+  x: PLAYER_CFG.START_X, y: PLAYER_CFG.START_Y, w: PLAYER_CFG.WIDTH, h: PLAYER_CFG.HEIGHT,
+  vx: 0, vy: 0, maxSpeed: PLAYER_CFG.MAX_SPEED, accel: PLAYER_CFG.ACCEL,
+  dragGround: PLAYER_CFG.DRAG_GROUND, dragAir: PLAYER_CFG.DRAG_AIR, jumpForce: PLAYER_CFG.JUMP_FORCE,
   coyoteFrames: 0, jumpBuffer: 0, onGround: false, facing: 1,
   invincible: 0, squish: 0, checkpointPulse: 0,
   speedTimer: 0, starTimer: 0,
@@ -268,7 +269,7 @@ function loadLevel(n: number) {
 }
 
 function resetEntities(full: boolean) {
-  player.x = checkpoint.x; player.y = 360
+  player.x = checkpoint.x; player.y = PLAYER_CFG.START_Y
   player.vx = 0; player.vy = 0
   player.onGround = false; player.coyoteFrames = 0; player.jumpBuffer = 0
   player.invincible = 0; player.squish = 0; player.checkpointPulse = 0
@@ -283,7 +284,7 @@ function resetEntities(full: boolean) {
   })
 
   if (full) {
-    checkpoint.x = 160
+    checkpoint.x = PLAYER_CFG.START_X
     checkpoints.forEach(c => { c.active = false })
     flies.forEach(f => { f.taken = false })
     powerUps.forEach(p => { p.taken = false })
@@ -297,15 +298,15 @@ function resetGame() {
   won.value = false; paused.value = false; gameOver.value = false
   currentLevel.value = 1; particles = []; screenShake = 0
   loadLevel(1); resetEntities(true)
-  levelBannerTimer = 90
+  levelBannerTimer = TIMERS.LEVEL_BANNER
   startBgMusic()
 }
 
 function advanceLevel() {
-  score.value += 1000 + lives.value * 300 + fliesCollected.value * 50
+  score.value += SCORING.LEVEL_CLEAR_BASE + lives.value * SCORING.LEVEL_CLEAR_LIFE_BONUS + fliesCollected.value * SCORING.LEVEL_CLEAR_FLY_BONUS
   sfxWin()
   if (currentLevel.value >= LEVEL_COUNT) {
-    score.value += 2000
+    score.value += SCORING.GAME_WIN_BONUS
     won.value = true
     persistScore({ name: playerName.value || 'Player', score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
     submitScore()
@@ -315,7 +316,7 @@ function advanceLevel() {
   currentLevel.value++
   particles = []; screenShake = 0
   loadLevel(currentLevel.value); resetEntities(true)
-  levelBannerTimer = 90
+  levelBannerTimer = TIMERS.LEVEL_BANNER
 }
 
 // ── Particles ──────────────────────────────────────────────────────────────────
@@ -345,18 +346,18 @@ function loseLife() {
   screenShake = 10
   burst(player.x + player.w/2, player.y + player.h/2, '#ef4444', 14, 5)
   if (lives.value <= 0) { gameOver.value = true; stopBgMusic(); return }
-  player.invincible = 140
-  player.x = checkpoint.x; player.y = 300
-  player.vx = 0; player.vy = -7
+  player.invincible = TIMERS.INVINCIBLE_HIT
+  player.x = checkpoint.x; player.y = PLAYER_CFG.RESPAWN_Y
+  player.vx = 0; player.vy = PLAYER_CFG.RESPAWN_VY
   player.speedTimer = 0; player.starTimer = 0; activePower.value = ''
-  world.cameraX = Math.max(0, Math.min(player.x - VIEWPORT_W * 0.3, world.width - VIEWPORT_W))
+  world.cameraX = Math.max(0, Math.min(player.x - VIEWPORT_W * ENGINE.CAMERA_OFFSET_RATIO, world.width - VIEWPORT_W))
 }
 
 function activateCP(cp: CP) {
   if (cp.active) return
   checkpoints.forEach(c => { c.active = false })
   cp.active = true; checkpoint.x = cp.x - 20
-  score.value += 250; player.checkpointPulse = 40
+  score.value += SCORING.CHECKPOINT; player.checkpointPulse = TIMERS.CHECKPOINT_PULSE
   sfxCheckpoint()
   burst(cp.x + cp.w/2, cp.y, '#f97316', 8, 4)
 }
@@ -371,11 +372,11 @@ function handleInput() {
   const left  = keys.has('ArrowLeft')  || keys.has('KeyA')
   const right = keys.has('ArrowRight') || keys.has('KeyD')
   const jump  = keys.has('Space')      || keys.has('ArrowUp') || keys.has('KeyW')
-  const boost = player.speedTimer > 0 ? 1.45 : 1
+  const boost = player.speedTimer > 0 ? POWERS.SPEED_MULTIPLIER : 1
 
   if (left  && !right) { player.vx -= player.accel * boost; player.facing = -1 }
   if (right && !left)  { player.vx += player.accel * boost; player.facing =  1 }
-  if (jump) player.jumpBuffer = 8
+  if (jump) player.jumpBuffer = TIMERS.JUMP_BUFFER
 
   if (player.jumpBuffer > 0 && (player.onGround || player.coyoteFrames > 0)) {
     player.vy = -player.jumpForce
@@ -398,19 +399,19 @@ function updatePlayer(dts: number) {
   else if (player.speedTimer > 0) activePower.value = 'Speed!'
   else                            activePower.value = ''
 
-  const maxSpd = player.speedTimer > 0 ? player.maxSpeed * 1.45 : player.maxSpeed
+  const maxSpd = player.speedTimer > 0 ? player.maxSpeed * POWERS.SPEED_MULTIPLIER : player.maxSpeed
   player.vx *= (player.onGround ? player.dragGround : player.dragAir)
-  if (Math.abs(player.vx) < 0.04) player.vx = 0
+  if (Math.abs(player.vx) < PLAYER_CFG.MIN_SPEED_THRESHOLD) player.vx = 0
   player.vx = Math.max(-maxSpd, Math.min(maxSpd, player.vx))
 
-  player.vy = Math.min(18, player.vy + world.gravity * dts)
+  player.vy = Math.min(ENGINE.MAX_FALL_SPEED, player.vy + world.gravity * dts)
   player.x += player.vx * dts; resolveH()
   const wasGround = player.onGround
   player.y += player.vy * dts; player.onGround = false; resolveV()
-  if (!player.onGround && wasGround) player.coyoteFrames = 8
-  if (player.y > world.height + 120) loseLife()
+  if (!player.onGround && wasGround) player.coyoteFrames = TIMERS.COYOTE_FRAMES
+  if (player.y > world.height + ENGINE.DEATH_Y_OFFSET) loseLife()
   player.x = Math.max(0, Math.min(player.x, world.width - player.w))
-  player.squish += (0 - player.squish) * 0.18
+  player.squish += (0 - player.squish) * PLAYER_CFG.SQUISH_RECOVERY
 }
 
 function resolveH() {
@@ -438,16 +439,16 @@ function updateMovingPlatforms(dts: number) {
 }
 
 function updateCamera(dts: number) {
-  const target = Math.max(0, Math.min(player.x - VIEWPORT_W * 0.35, world.width - VIEWPORT_W))
-  world.cameraX += (target - world.cameraX) * Math.min(1, 0.08 * dts)
-  world.bgOffset += 0.1 * dts
-  world.fgOffset += 0.4 * dts
+  const target = Math.max(0, Math.min(player.x - VIEWPORT_W * ENGINE.CAMERA_OFFSET_RATIO, world.width - VIEWPORT_W))
+  world.cameraX += (target - world.cameraX) * Math.min(1, ENGINE.CAMERA_LAG * dts)
+  world.bgOffset += ENGINE.BG_PARALLAX_SPEED * dts
+  world.fgOffset += ENGINE.FG_PARALLAX_SPEED * dts
 }
 
 function updateFlies() {
   for (const f of flies) {
     if (f.taken || !circleHitsRect(f.x, f.y, f.r + 6, player)) continue
-    f.taken = true; fliesCollected.value++; score.value += 100
+    f.taken = true; fliesCollected.value++; score.value += SCORING.FLY
     sfxFly(); burst(f.x, f.y, '#facc15', 8, 4)
   }
 }
@@ -457,10 +458,10 @@ function updatePowerUps() {
     if (pu.taken || !circleHitsRect(pu.x, pu.y, pu.r + 8, player)) continue
     pu.taken = true; sfxPowerUp()
     if (pu.type === 'speed') {
-      player.speedTimer = 300
+      player.speedTimer = TIMERS.SPEED_BOOST
       burst(pu.x, pu.y, '#86efac', 12, 5)
     } else {
-      player.starTimer = 180; player.invincible = 180
+      player.starTimer = TIMERS.STAR_POWER; player.invincible = TIMERS.STAR_POWER
       burst(pu.x, pu.y, '#fde68a', 16, 6)
     }
   }
@@ -483,14 +484,14 @@ function updateEnemies(dts: number) {
       e.hp--
       const killed = e.hp <= 0
       if (killed) {
-        e.alive = false; e.dying = true; e.deathTimer = 20
+        e.alive = false; e.dying = true; e.deathTimer = TIMERS.DEATH_ANIMATION
         burst(e.x + e.w/2, e.y + e.h/2, e.isBoss ? '#f43f5e' : '#93c5fd', e.isBoss ? 26 : 10, e.isBoss ? 9 : 4)
-        score.value += e.isBoss ? 1500 : 220
+        score.value += e.isBoss ? SCORING.BOSS_KILL : SCORING.ENEMY_KILL
       } else {
         burst(e.x + e.w/2, e.y, '#f97316', 8, 4)
-        score.value += 100
+        score.value += 100 // partial damage score
       }
-      player.vy = e.isBoss ? -12 : -9.5; player.squish = 1.3
+      player.vy = e.isBoss ? PLAYER_CFG.BOUNCE_BOSS : PLAYER_CFG.BOUNCE_NORMAL; player.squish = PLAYER_CFG.SQUISH_STOMP_VAL
       sfxStomp(); screenShake = e.isBoss ? 9 : 4
     } else if (player.starTimer === 0) {
       loseLife()

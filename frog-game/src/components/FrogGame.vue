@@ -53,6 +53,20 @@
     <main class="stage card" ref="stageRef">
       <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
 
+      <div v-if="!gameStarted" class="start-overlay">
+        <div class="start-card">
+          <div class="start-frog">🐸</div>
+          <h2>Frog vs. Smurf Invaders</h2>
+          <p>5 levels of platforming mayhem — stomp Smurfs, collect flies, survive the boss</p>
+          <button class="start-btn" @click="startGame">&#9654; Start Game</button>
+          <div class="start-keys">
+            <span>&#8592; &#8594; / A D &mdash; Move</span>
+            <span>Space / W &mdash; Jump</span>
+            <span>P: Pause &nbsp; M: Mute &nbsp; F: Fullscreen</span>
+          </div>
+        </div>
+      </div>
+
       <div class="mobile-controls">
         <div class="mobile-left">
           <button
@@ -128,7 +142,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const VIEWPORT_W = 1280
 const VIEWPORT_H = 720
 const TOTAL_FLIES = 18
-const LEVEL_COUNT = 3
+const LEVEL_COUNT = 5
 const STORAGE_KEY = 'frog-lb-v2'
 const BG_MELODY = [261, 329, 392, 523, 392, 329, 440, 349, 392, 261, 329, 294]
 
@@ -172,6 +186,7 @@ interface LevelDef {
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const stageRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
+const gameStarted = ref(false)
 const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
 const remoteScores = ref<LeaderEntry[]>([])
 const isOnline = ref(false)
@@ -396,6 +411,169 @@ const LEVELS: LevelDef[] = [
       { x: 4700, y: 272, r: 14, type: 'star'  },
     ],
     finishGate: { x: 5820, y: 362, w: 60, h: 140 },
+  },
+
+  // Level 4 – Lava Fields
+  {
+    worldWidth: 6800,
+    platforms: [
+      { x: 0,    y: 560, w: 580,  h: 160, type: 'ground' },
+      { x: 680,  y: 560, w: 660,  h: 160, type: 'ground' },
+      { x: 1440, y: 560, w: 620,  h: 160, type: 'ground' },
+      { x: 2180, y: 560, w: 680,  h: 160, type: 'ground' },
+      { x: 2980, y: 560, w: 640,  h: 160, type: 'ground' },
+      { x: 3740, y: 560, w: 700,  h: 160, type: 'ground' },
+      { x: 4560, y: 560, w: 660,  h: 160, type: 'ground' },
+      { x: 5360, y: 560, w: 1440, h: 160, type: 'ground' },
+      { x: 200,  y: 460, w: 130, h: 22, type: 'stone' },
+      { x: 400,  y: 388, w: 120, h: 22, type: 'stone' },
+      { x: 720,  y: 460, w: 140, h: 22, type: 'wood',  vx:  1.5, minPX: 680,  maxPX: 900  },
+      { x: 960,  y: 388, w: 130, h: 22, type: 'stone' },
+      { x: 1150, y: 318, w: 120, h: 22, type: 'wood'  },
+      { x: 1500, y: 450, w: 140, h: 22, type: 'stone' },
+      { x: 1730, y: 378, w: 130, h: 22, type: 'wood',  vx: -1.8, minPX: 1650, maxPX: 1950 },
+      { x: 1960, y: 308, w: 120, h: 22, type: 'stone' },
+      { x: 2240, y: 460, w: 130, h: 22, type: 'stone' },
+      { x: 2440, y: 390, w: 140, h: 22, type: 'wood'  },
+      { x: 2660, y: 320, w: 130, h: 22, type: 'stone', vx:  2.0, minPX: 2580, maxPX: 2860 },
+      { x: 3040, y: 460, w: 140, h: 22, type: 'wood'  },
+      { x: 3260, y: 390, w: 130, h: 22, type: 'stone' },
+      { x: 3480, y: 320, w: 130, h: 22, type: 'wood',  vx: -2.2, minPX: 3400, maxPX: 3700 },
+      { x: 3800, y: 450, w: 140, h: 22, type: 'stone' },
+      { x: 4020, y: 378, w: 130, h: 22, type: 'wood'  },
+      { x: 4240, y: 306, w: 120, h: 22, type: 'stone', vx:  2.4, minPX: 4180, maxPX: 4490 },
+      { x: 4620, y: 448, w: 140, h: 22, type: 'wood'  },
+      { x: 4840, y: 374, w: 130, h: 22, type: 'stone' },
+      { x: 5060, y: 302, w: 130, h: 22, type: 'wood',  vx: -2.6, minPX: 4990, maxPX: 5290 },
+      { x: 5420, y: 448, w: 140, h: 22, type: 'stone' },
+      { x: 5640, y: 374, w: 130, h: 22, type: 'wood'  },
+      { x: 5860, y: 302, w: 130, h: 22, type: 'stone' },
+      { x: 6080, y: 374, w: 130, h: 22, type: 'wood'  },
+      { x: 6300, y: 448, w: 130, h: 22, type: 'stone' },
+    ],
+    enemies: [
+      { x: 730,  y: 522, w: 44, h: 38, vx:  2.5, minX: 690,  maxX: 1330, bob: 0.0, hue: 15 },
+      { x: 1500, y: 522, w: 44, h: 38, vx: -2.8, minX: 1440, maxX: 2040, bob: 1.0, hue: 25 },
+      { x: 1160, y: 280, w: 44, h: 38, vx:  2.2, minX: 1150, maxX: 1370, bob: 0.5, hue:  5 },
+      { x: 2240, y: 522, w: 44, h: 38, vx:  3.0, minX: 2190, maxX: 2850, bob: 2.0, hue: 10 },
+      { x: 2700, y: 282, w: 44, h: 38, vx: -2.5, minX: 2630, maxX: 2860, bob: 0.3, hue: 20 },
+      { x: 3040, y: 522, w: 44, h: 38, vx:  2.8, minX: 2990, maxX: 3610, bob: 1.5, hue: 30 },
+      { x: 3800, y: 522, w: 44, h: 38, vx: -3.2, minX: 3750, maxX: 4430, bob: 0.8, hue:  8 },
+      { x: 4620, y: 522, w: 44, h: 38, vx:  3.0, minX: 4570, maxX: 5220, bob: 1.2, hue: 18 },
+      { x: 5360, y: 522, w: 44, h: 38, vx: -3.5, minX: 5310, maxX: 6380, bob: 0.6, hue: 12 },
+    ],
+    flies: [
+      { x: 250,  y: 420, r: 10 }, { x: 450,  y: 348, r: 10 },
+      { x: 770,  y: 420, r: 10 }, { x: 1010, y: 348, r: 10 }, { x: 1200, y: 278, r: 10 },
+      { x: 1550, y: 410, r: 10 }, { x: 1780, y: 338, r: 10 }, { x: 2010, y: 268, r: 10 },
+      { x: 2290, y: 420, r: 10 }, { x: 2490, y: 350, r: 10 }, { x: 2710, y: 280, r: 10 },
+      { x: 3090, y: 420, r: 10 }, { x: 3310, y: 350, r: 10 }, { x: 3530, y: 280, r: 10 },
+      { x: 3850, y: 410, r: 10 }, { x: 4070, y: 338, r: 10 }, { x: 4290, y: 266, r: 10 },
+      { x: 5640, y: 334, r: 10 },
+    ],
+    hazards: [
+      { x: 580,  y: 685, w: 100, h: 35, type: 'slime' },
+      { x: 1340, y: 685, w: 100, h: 35, type: 'slime' },
+      { x: 2060, y: 685, w: 120, h: 35, type: 'slime' },
+      { x: 2860, y: 685, w: 120, h: 35, type: 'slime' },
+      { x: 3620, y: 685, w: 120, h: 35, type: 'slime' },
+      { x: 4440, y: 685, w: 120, h: 35, type: 'slime' },
+      { x: 5220, y: 685, w: 140, h: 35, type: 'slime' },
+    ],
+    checkpoints: [
+      { x: 1380, y: 498, w: 28, h: 62 },
+      { x: 3000, y: 498, w: 28, h: 62 },
+      { x: 4800, y: 498, w: 28, h: 62 },
+    ],
+    powerUps: [
+      { x: 450,  y: 358, r: 14, type: 'speed' },
+      { x: 1960, y: 278, r: 14, type: 'star'  },
+      { x: 3530, y: 290, r: 14, type: 'speed' },
+      { x: 5060, y: 272, r: 14, type: 'star'  },
+    ],
+    finishGate: { x: 6480, y: 362, w: 60, h: 140 },
+  },
+
+  // Level 5 – Dark Fortress (final boss)
+  {
+    worldWidth: 7500,
+    platforms: [
+      { x: 0,    y: 560, w: 540,  h: 160, type: 'ground' },
+      { x: 660,  y: 560, w: 580,  h: 160, type: 'ground' },
+      { x: 1380, y: 560, w: 540,  h: 160, type: 'ground' },
+      { x: 2060, y: 560, w: 560,  h: 160, type: 'ground' },
+      { x: 2760, y: 560, w: 540,  h: 160, type: 'ground' },
+      { x: 3440, y: 560, w: 580,  h: 160, type: 'ground' },
+      { x: 4160, y: 560, w: 540,  h: 160, type: 'ground' },
+      { x: 4840, y: 560, w: 580,  h: 160, type: 'ground' },
+      { x: 5580, y: 560, w: 1920, h: 160, type: 'ground' },
+      { x: 180,  y: 455, w: 130, h: 22, type: 'wood',  vx:  1.2, minPX: 100,  maxPX: 440  },
+      { x: 380,  y: 382, w: 120, h: 22, type: 'stone' },
+      { x: 710,  y: 455, w: 140, h: 22, type: 'stone', vx: -1.6, minPX: 660,  maxPX: 960  },
+      { x: 980,  y: 382, w: 130, h: 22, type: 'wood'  },
+      { x: 1180, y: 310, w: 120, h: 22, type: 'stone' },
+      { x: 1430, y: 452, w: 140, h: 22, type: 'wood',  vx:  2.0, minPX: 1380, maxPX: 1710 },
+      { x: 1720, y: 378, w: 130, h: 22, type: 'stone' },
+      { x: 1930, y: 306, w: 120, h: 22, type: 'wood'  },
+      { x: 2120, y: 452, w: 140, h: 22, type: 'stone', vx: -2.2, minPX: 2060, maxPX: 2360 },
+      { x: 2410, y: 380, w: 130, h: 22, type: 'wood'  },
+      { x: 2620, y: 308, w: 120, h: 22, type: 'stone' },
+      { x: 2820, y: 452, w: 140, h: 22, type: 'wood',  vx:  2.4, minPX: 2760, maxPX: 3100 },
+      { x: 3110, y: 380, w: 130, h: 22, type: 'stone' },
+      { x: 3290, y: 308, w: 130, h: 22, type: 'wood'  },
+      { x: 3500, y: 452, w: 140, h: 22, type: 'stone', vx: -2.6, minPX: 3440, maxPX: 3750 },
+      { x: 3800, y: 378, w: 130, h: 22, type: 'wood'  },
+      { x: 4010, y: 306, w: 120, h: 22, type: 'stone' },
+      { x: 4220, y: 452, w: 140, h: 22, type: 'wood',  vx:  2.8, minPX: 4160, maxPX: 4520 },
+      { x: 4530, y: 378, w: 130, h: 22, type: 'stone' },
+      { x: 4740, y: 306, w: 120, h: 22, type: 'wood'  },
+      { x: 4900, y: 452, w: 140, h: 22, type: 'stone', vx: -3.0, minPX: 4840, maxPX: 5170 },
+      { x: 5200, y: 378, w: 130, h: 22, type: 'wood'  },
+      { x: 5420, y: 306, w: 130, h: 22, type: 'stone' },
+    ],
+    enemies: [
+      { x: 720,  y: 522, w: 44, h: 38, vx:  3.0, minX: 670,  maxX: 1260, bob: 0.0, hue:  5 },
+      { x: 1440, y: 522, w: 44, h: 38, vx: -3.2, minX: 1380, maxX: 1960, bob: 1.0, hue: 15 },
+      { x: 1200, y: 272, w: 44, h: 38, vx:  2.8, minX: 1180, maxX: 1380, bob: 0.5, hue: 25 },
+      { x: 2110, y: 522, w: 44, h: 38, vx:  3.4, minX: 2070, maxX: 2620, bob: 2.0, hue: 35 },
+      { x: 2450, y: 342, w: 44, h: 38, vx: -3.0, minX: 2380, maxX: 2620, bob: 0.3, hue: 10 },
+      { x: 2820, y: 522, w: 44, h: 38, vx:  3.6, minX: 2780, maxX: 3400, bob: 1.5, hue: 20 },
+      { x: 3500, y: 522, w: 44, h: 38, vx: -3.8, minX: 3450, maxX: 4050, bob: 0.8, hue: 30 },
+      { x: 4220, y: 522, w: 44, h: 38, vx:  3.5, minX: 4170, maxX: 4820, bob: 1.2, hue:  0 },
+      { x: 4900, y: 522, w: 44, h: 38, vx: -3.2, minX: 4850, maxX: 5500, bob: 0.6, hue: 18 },
+      { x: 6400, y: 458, w: 100, h: 88, vx:  2.5, minX: 5700, maxX: 7300, bob: 0.0, hue:  0, hp: 5, isBoss: true },
+    ],
+    flies: [
+      { x: 230,  y: 415, r: 10 }, { x: 430,  y: 342, r: 10 },
+      { x: 760,  y: 415, r: 10 }, { x: 1030, y: 342, r: 10 }, { x: 1230, y: 270, r: 10 },
+      { x: 1480, y: 412, r: 10 }, { x: 1770, y: 338, r: 10 }, { x: 1980, y: 266, r: 10 },
+      { x: 2170, y: 412, r: 10 }, { x: 2460, y: 340, r: 10 }, { x: 2670, y: 268, r: 10 },
+      { x: 2870, y: 412, r: 10 }, { x: 3160, y: 340, r: 10 }, { x: 3340, y: 268, r: 10 },
+      { x: 3550, y: 412, r: 10 }, { x: 3850, y: 338, r: 10 }, { x: 4060, y: 266, r: 10 },
+      { x: 5250, y: 266, r: 10 },
+    ],
+    hazards: [
+      { x: 540,  y: 685, w: 120, h: 35, type: 'slime' },
+      { x: 1240, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 1920, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 2620, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 3300, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 4020, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 4700, y: 685, w: 140, h: 35, type: 'slime' },
+      { x: 5420, y: 685, w: 160, h: 35, type: 'slime' },
+    ],
+    checkpoints: [
+      { x: 1360, y: 498, w: 28, h: 62 },
+      { x: 3100, y: 498, w: 28, h: 62 },
+      { x: 5100, y: 498, w: 28, h: 62 },
+    ],
+    powerUps: [
+      { x: 390,  y: 352, r: 14, type: 'speed' },
+      { x: 1930, y: 276, r: 14, type: 'star'  },
+      { x: 3290, y: 278, r: 14, type: 'speed' },
+      { x: 5420, y: 276, r: 14, type: 'star'  },
+    ],
+    finishGate: { x: 7360, y: 362, w: 60, h: 140 },
   },
 ]
 
@@ -754,6 +932,7 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
+function startGame()   { gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
@@ -941,7 +1120,7 @@ function updateWin() {
 }
 
 function update(dt: number) {
-  if (paused.value || gameOver.value || won.value) return
+  if (!gameStarted.value || paused.value || gameOver.value || won.value) return
   const dts = Math.min(2, dt / 16.6667)
   elapsedMs.value += dt
   updateMovingPlatforms(dts)
@@ -969,9 +1148,15 @@ function drawParallax() {
   } else if (lvl === 2) {
     sky = ctx.createLinearGradient(0,0,0,H)
     sky.addColorStop(0, '#1e1b4b'); sky.addColorStop(0.5, '#312e81'); sky.addColorStop(1, '#1e3a5f')
-  } else {
+  } else if (lvl === 3) {
     sky = ctx.createLinearGradient(0,0,0,H)
     sky.addColorStop(0, '#f0abfc'); sky.addColorStop(0.5, '#c4b5fd'); sky.addColorStop(1, '#bae6fd')
+  } else if (lvl === 4) {
+    sky = ctx.createLinearGradient(0,0,0,H)
+    sky.addColorStop(0, '#431407'); sky.addColorStop(0.5, '#7c2d12'); sky.addColorStop(1, '#9a3412')
+  } else {
+    sky = ctx.createLinearGradient(0,0,0,H)
+    sky.addColorStop(0, '#020617'); sky.addColorStop(0.5, '#0f172a'); sky.addColorStop(1, '#1e1b4b')
   }
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H)
 
@@ -1008,7 +1193,7 @@ function drawParallax() {
       ctx.fillStyle = `hsla(${220+i*18}, 80%, 65%, 0.35)`
       ctx.beginPath(); ctx.arc(cx2, 490+(i%3)*20, 20, 0, Math.PI*2); ctx.fill()
     }
-  } else {
+  } else if (lvl === 3) {
     // Rainbow
     ctx.save(); ctx.globalAlpha = 0.22
     for (let r = 0; r < 7; r++) {
@@ -1023,6 +1208,46 @@ function drawParallax() {
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.beginPath(); ctx.arc(cx2, cy2, 60, 0, Math.PI*2); ctx.arc(cx2+50, cy2+10, 45, 0, Math.PI*2); ctx.arc(cx2-40, cy2+12, 40, 0, Math.PI*2); ctx.fill()
     }
+  } else if (lvl === 4) {
+    // Volcanoes
+    for (let i = 0; i < 5; i++) {
+      const vx2 = ((i*340) - world.cameraX*0.1 + world.width) % (W+340) - 170
+      ctx.fillStyle = '#78350f'
+      ctx.beginPath(); ctx.moveTo(vx2,560); ctx.lineTo(vx2+80,320); ctx.lineTo(vx2+160,560); ctx.closePath(); ctx.fill()
+      ctx.fillStyle = '#dc2626'
+      ctx.beginPath(); ctx.arc(vx2+80, 320, 22, 0, Math.PI*2); ctx.fill()
+      // Lava drip
+      ctx.fillStyle = `rgba(251,146,60,${0.5+Math.sin(performance.now()*0.003+i)*0.3})`
+      ctx.beginPath(); ctx.arc(vx2+80, 340+Math.sin(performance.now()*0.004+i)*8, 10, 0, Math.PI*2); ctx.fill()
+    }
+    // Embers
+    for (let i = 0; i < 12; i++) {
+      const ex = ((i*180) - world.cameraX*0.25 + world.width) % (W+180) - 60
+      const ey = 200 + Math.sin(performance.now()*0.005+i*1.3)*120
+      ctx.fillStyle = `rgba(251,146,60,${0.3+Math.sin(performance.now()*0.01+i)*0.2})`
+      ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI*2); ctx.fill()
+    }
+  } else {
+    // Stars
+    for (let i = 0; i < 60; i++) {
+      const sx2 = ((i*193) - world.cameraX*0.05 + world.width*2) % W
+      const sy2 = (i*137) % (H*0.65)
+      const bright = 0.4 + Math.sin(performance.now()*0.002+i)*0.3
+      ctx.fillStyle = `rgba(255,255,255,${bright})`
+      ctx.beginPath(); ctx.arc(sx2, sy2, 1.5+i%2, 0, Math.PI*2); ctx.fill()
+    }
+    // Dark towers
+    for (let i = 0; i < 5; i++) {
+      const tx2 = ((i*310) - world.cameraX*0.08 + world.width) % (W+310) - 155
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(tx2+30, 340, 40, 220)
+      ctx.fillRect(tx2, 380, 100, 180)
+      // Battlements
+      for (let b = 0; b < 5; b++) ctx.fillRect(tx2+b*22, 340-16, 14, 20)
+      // Glowing window
+      ctx.fillStyle = `rgba(239,68,68,${0.5+Math.sin(performance.now()*0.003+i)*0.3})`
+      ctx.fillRect(tx2+38, 420, 24, 30)
+    }
   }
 }
 
@@ -1036,11 +1261,13 @@ function drawWorld() {
 
 function drawGround() {
   const lvl = currentLevel.value
-  const gc = lvl===1 ? '#65a30d' : lvl===2 ? '#3b0764' : '#6366f1'
+  const gc = lvl===1 ? '#65a30d' : lvl===2 ? '#3b0764' : lvl===3 ? '#6366f1' : lvl===4 ? '#7c2d12' : '#1e1b4b'
   ctx.fillStyle = gc; ctx.fillRect(0, 560, world.width, 160)
   for (let i = 0; i < 62; i++) {
     const x = i*96 + (Math.sin(i*3.1 + world.fgOffset*0.02)+1)*16
-    ctx.fillStyle = i%3===0 ? (lvl===1?'#84cc16':lvl===2?'#4c1d95':'#a5b4fc') : (lvl===1?'#4d7c0f':lvl===2?'#2e1065':'#4338ca')
+    ctx.fillStyle = i%3===0
+      ? (lvl===1?'#84cc16':lvl===2?'#4c1d95':lvl===3?'#a5b4fc':lvl===4?'#dc2626':'#312e81')
+      : (lvl===1?'#4d7c0f':lvl===2?'#2e1065':lvl===3?'#4338ca':lvl===4?'#92400e':'#1e1b4b')
     ctx.beginPath(); ctx.moveTo(x,560); ctx.lineTo(x+10,530); ctx.lineTo(x+18,560); ctx.closePath(); ctx.fill()
   }
 }
@@ -1233,7 +1460,7 @@ function drawLevelBanner() {
   ctx.save(); ctx.globalAlpha = alpha
   ctx.fillStyle = 'rgba(15,23,42,0.72)'; ctx.fillRect(0, VIEWPORT_H/2-52, VIEWPORT_W, 104)
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'
-  const names = ['Swamp Forest','Crystal Cave','Sky Kingdom']
+  const names = ['Swamp Forest','Crystal Cave','Sky Kingdom','Lava Fields','Dark Fortress']
   ctx.fillText(`Level ${currentLevel.value}: ${names[currentLevel.value-1]}`, VIEWPORT_W/2, VIEWPORT_H/2+14)
   ctx.restore()
   levelBannerTimer--
@@ -1271,7 +1498,7 @@ onMounted(() => {
   ctx = canvasRef.value!.getContext('2d')!
   ctx.imageSmoothingEnabled = false
   buildSpriteSheet()
-  loadLevel(1); resetGame()
+  loadLevel(1); resetEntities(true)
   raf = requestAnimationFrame(gameLoop)
   fetchScores()
 })
@@ -1368,9 +1595,34 @@ button:hover { transform: translateY(-1px); }
 .power-active { border-color: rgba(250,204,21,0.5) !important; }
 .power-active strong { color: #fde047; }
 
-.stage { max-width: 1440px; margin: 0 auto; padding: 14px; border-radius: 30px; }
+.stage { max-width: 1440px; margin: 0 auto; padding: 14px; border-radius: 30px; position: relative; }
 
 canvas { width: 100%; height: auto; display: block; border-radius: 22px; background: #7dd3fc; }
+
+.start-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,18,38,0.78); border-radius: 22px; z-index: 10;
+}
+.start-card {
+  text-align: center; padding: 40px 48px; max-width: 560px;
+  background: rgba(15,23,42,0.92); border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 28px; box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+}
+.start-frog { font-size: 4rem; line-height: 1; margin-bottom: 12px; }
+.start-card h2 { margin: 0 0 10px; font-size: 1.9rem; color: #f1f5f9; }
+.start-card p  { margin: 0 0 28px; color: #94a3b8; line-height: 1.5; }
+.start-btn {
+  font-size: 1.15rem; padding: 16px 44px; border-radius: 999px; font-weight: 800;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff; border: 0; cursor: pointer; box-shadow: 0 8px 28px rgba(34,197,94,0.35);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(34,197,94,0.45); }
+.start-keys {
+  margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  color: #64748b; font-size: 0.82rem;
+}
+.start-keys span { background: rgba(255,255,255,0.06); padding: 5px 12px; border-radius: 999px; }
 
 .stage:fullscreen {
   display: flex; flex-direction: column; justify-content: center; align-items: center;

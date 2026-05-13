@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd frog-game && npm run build",
+  "installCommand": "cd frog-game && npm install",
+  "outputDirectory": "frog-game/dist"
+}

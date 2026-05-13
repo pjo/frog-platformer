@@ -109,6 +109,7 @@ const fliesCollected = ref(0)
 const elapsedMs = ref(0)
 const currentLevel = ref(1)
 const activePower = ref('')
+const difficulty = ref<'easy' | 'normal' | 'hard'>('normal')
 
 const totalFlies = computed(() => LEVELS[currentLevel.value - 1].flies.length)
 
@@ -223,12 +224,16 @@ function loadLevel(n: number) {
   const def = LEVELS[n - 1]
   world.width = def.worldWidth
   platforms  = def.platforms.map(p => ({ ...p }))
+  const speedMult = difficulty.value === 'easy' ? 0.65 : difficulty.value === 'hard' ? 1.4 : 1.0
+  const hpMult   = difficulty.value === 'easy' ? 0.5  : difficulty.value === 'hard' ? 1.5 : 1.0
   enemies    = def.enemies.map(e => ({
     x: e.x, y: e.y, w: e.w, h: e.h,
-    vx: e.vx, minX: e.minX, maxX: e.maxX,
+    vx: e.vx * speedMult, minX: e.minX, maxX: e.maxX,
     alive: true, dying: false, deathTimer: 0,
     bob: e.bob, hue: e.hue, mood: 'walk',
-    hp: e.hp ?? 1, maxHp: e.hp ?? 1, isBoss: e.isBoss ?? false,
+    hp:    Math.max(1, Math.round((e.hp ?? 1) * hpMult)),
+    maxHp: Math.max(1, Math.round((e.hp ?? 1) * hpMult)),
+    isBoss: e.isBoss ?? false,
   }))
   enemyInitData = enemies.map(e => ({ x: e.x, vx: e.vx, hp: e.maxHp }))
   flies      = def.flies.map(f => ({ ...f, taken: false }))
@@ -264,7 +269,8 @@ function resetEntities(full: boolean) {
 }
 
 function resetGame() {
-  score.value = 0; lives.value = 3; elapsedMs.value = 0
+  score.value = 0; elapsedMs.value = 0
+  lives.value = difficulty.value === 'easy' ? 5 : difficulty.value === 'hard' ? 2 : 3
   won.value = false; paused.value = false; gameOver.value = false
   currentLevel.value = 1; particles = []; screenShake = 0
   loadLevel(1); resetEntities(true)
@@ -299,7 +305,7 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
-function startGame()   { gameStarted.value = true; resetGame() }
+function startGame(d: 'easy' | 'normal' | 'hard') { difficulty.value = d; gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }

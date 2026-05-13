@@ -62,21 +62,42 @@ function drawSmurfFrame(ctx, ox, oy, frame, state) {
   const step = state === 'walk' ? [0,2,3,2,0,-1][ph] : 0
   const ew = state === 'alert' && (ph===2||ph===3)
   const mouth = state === 'alert' ? 4 : 2
-  px(ctx, ox+18, oy+22, 28, 22, '#60a5fa')
-  px(ctx, ox+18, oy+14, 28, 12, '#93c5fd')
-  px(ctx, ox+16, oy+10, 32, 10, '#ffffff')
-  px(ctx, ox+22, oy+ 6, 20,  6, '#ffffff')
-  px(ctx, ox+20, oy+ 4, 24,  4, '#e2e8f0')
-  px(ctx, ox+22, oy+20, 20, 12, '#f8fafc')
-  px(ctx, ox+22, oy+18,  6, ew?6:4, '#ffffff')
-  px(ctx, ox+36, oy+18,  6, ew?6:4, '#ffffff')
-  px(ctx, ox+24, oy+20,  2,  2, '#0f172a')
-  px(ctx, ox+38, oy+20,  2,  2, '#0f172a')
-  px(ctx, ox+27, oy+28, 10, mouth, '#1e293b')
-  px(ctx, ox+20, oy+44,  8, 9+step, '#2563eb')
-  px(ctx, ox+36, oy+44,  8, 9-step, '#2563eb')
-  px(ctx, ox+18, oy+52+step, 10, 4, '#1d4ed8')
-  px(ctx, ox+36, oy+52-step, 10, 4, '#1d4ed8')
+  // ── Pointed Phrygian cap (white, drooping tip) ──
+  px(ctx, ox+28, oy+ 0,  8,  4, '#e2e8f0')  // tip
+  px(ctx, ox+26, oy+ 4, 12,  4, '#f1f5f9')
+  px(ctx, ox+22, oy+ 8, 18,  4, '#f8fafc')
+  px(ctx, ox+18, oy+12, 26,  6, '#ffffff')   // brim
+  // ── Blue head ──
+  px(ctx, ox+16, oy+16, 32, 16, '#93c5fd')
+  // Eyes
+  px(ctx, ox+20, oy+18,  6, ew?6:4, '#ffffff')
+  px(ctx, ox+38, oy+18,  6, ew?6:4, '#ffffff')
+  px(ctx, ox+22, oy+20,  2,  2, '#0f172a')
+  px(ctx, ox+40, oy+20,  2,  2, '#0f172a')
+  // Rosy cheeks
+  px(ctx, ox+18, oy+25,  6,  3, 'rgba(248,113,113,0.45)')
+  px(ctx, ox+40, oy+25,  6,  3, 'rgba(248,113,113,0.45)')
+  // Nose
+  px(ctx, ox+30, oy+23,  4,  3, '#7dd3fc')
+  // Mouth
+  px(ctx, ox+26, oy+29, 12, mouth, '#1e293b')
+  // ── Blue body ──
+  px(ctx, ox+18, oy+32, 28, 10, '#60a5fa')
+  // White shirt/belly
+  px(ctx, ox+22, oy+33, 20,  8, '#f8fafc')
+  // Arms
+  px(ctx, ox+10, oy+33,  8,  6, '#60a5fa')
+  px(ctx, ox+46, oy+33,  8,  6, '#60a5fa')
+  px(ctx, ox+ 8, oy+37,  6,  4, '#3b82f6')
+  px(ctx, ox+50, oy+37,  6,  4, '#3b82f6')
+  // ── White trousers ──
+  px(ctx, ox+18, oy+42, 28,  8, '#f1f5f9')
+  // ── Blue legs ──
+  px(ctx, ox+20, oy+50,  8, 6+step, '#2563eb')
+  px(ctx, ox+36, oy+50,  8, 6-step, '#2563eb')
+  // Shoes
+  px(ctx, ox+18, oy+54+step, 12, 4, '#1d4ed8')
+  px(ctx, ox+34, oy+54-step, 12, 4, '#1d4ed8')
 }
 
 function drawFlyFrame(ctx, ox, oy, frame) {

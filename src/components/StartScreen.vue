@@ -3,8 +3,19 @@
     <div class="start-card">
       <div class="start-frog">🐸</div>
       <h2>Frog vs. Smurf Invaders</h2>
-      <p>5 levels of platforming mayhem — stomp Smurfs, collect flies, survive the boss</p>
-      <button class="start-btn" @click="$emit('start')">&#9654; Start Game</button>
+      <p>10 levels of platforming mayhem — stomp Smurfs, collect flies, survive the bosses</p>
+
+      <div class="difficulty-row">
+        <button
+          v-for="d in difficulties"
+          :key="d.value"
+          class="diff-btn"
+          :class="[d.value, { active: difficulty === d.value }]"
+          @click="difficulty = d.value"
+        >{{ d.label }}</button>
+      </div>
+
+      <button class="start-btn" @click="$emit('start', difficulty)">&#9654; Start Game</button>
       <div class="start-keys">
         <span>&#8592; &#8594; / A D &mdash; Move</span>
         <span>Space / W &mdash; Jump</span>
@@ -15,7 +26,17 @@
 </template>
 
 <script setup lang="ts">
-defineEmits<{ start: [] }>()
+import { ref } from 'vue'
+
+type Difficulty = 'easy' | 'normal' | 'hard'
+defineEmits<{ start: [difficulty: Difficulty] }>()
+
+const difficulty = ref<Difficulty>('normal')
+const difficulties: { value: Difficulty; label: string }[] = [
+  { value: 'easy',   label: 'Easy'   },
+  { value: 'normal', label: 'Normal' },
+  { value: 'hard',   label: 'Hard'   },
+]
 </script>
 
 <style scoped>
@@ -30,7 +51,22 @@ defineEmits<{ start: [] }>()
 }
 .start-frog { font-size: 4rem; line-height: 1; margin-bottom: 12px; }
 .start-card h2 { margin: 0 0 10px; font-size: 1.9rem; color: #f1f5f9; }
-.start-card p  { margin: 0 0 28px; color: #94a3b8; line-height: 1.5; }
+.start-card p  { margin: 0 0 22px; color: #94a3b8; line-height: 1.5; }
+
+.difficulty-row {
+  display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
+}
+.diff-btn {
+  font-size: 0.9rem; padding: 8px 22px; border-radius: 999px; font-weight: 700;
+  background: rgba(255,255,255,0.07); color: #94a3b8;
+  border: 2px solid transparent; cursor: pointer;
+  transition: all 0.12s;
+}
+.diff-btn:hover { color: #f1f5f9; background: rgba(255,255,255,0.12); }
+.diff-btn.easy.active  { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.12); }
+.diff-btn.normal.active{ border-color: #eab308; color: #eab308; background: rgba(234,179,8,0.12); }
+.diff-btn.hard.active  { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.12); }
+
 .start-btn {
   font-size: 1.15rem; padding: 16px 44px; border-radius: 999px; font-weight: 800;
   background: linear-gradient(135deg, #22c55e, #16a34a);

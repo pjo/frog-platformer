@@ -13,6 +13,13 @@
       </div>
       <div class="actions">
         <span class="level-badge">Level {{ currentLevel }} / {{ LEVEL_COUNT }}</span>
+        <label class="name-label">
+          Name
+          <input v-model="playerName" maxlength="20" class="name-input" placeholder="Player" />
+        </label>
+        <span class="online-badge" :class="isOnline ? 'live' : 'local'">
+          {{ isOnline ? 'Live scores' : 'Offline' }}
+        </span>
         <button @click="togglePause">{{ paused ? 'Resume' : 'Pause' }}</button>
         <button @click="resetGame">Restart</button>
         <button @click="toggleMute">{{ muted ? 'Unmute' : 'Mute' }}</button>
@@ -114,14 +121,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const VIEWPORT_W = 1280
 const VIEWPORT_H = 720
 const TOTAL_FLIES = 18
 const LEVEL_COUNT = 3
-const PLAYER_NAME = 'You'
 const STORAGE_KEY = 'frog-lb-v2'
 const BG_MELODY = [261, 329, 392, 523, 392, 329, 440, 349, 392, 261, 329, 294]
 
@@ -163,6 +169,10 @@ interface LevelDef {
 
 // ── Vue state ─────────────────────────────────────────────────────────────────
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
+const remoteScores = ref<LeaderEntry[]>([])
+const isOnline = ref(false)
+watch(playerName, name => localStorage.setItem('frog-player-name', name.trim() || 'Player'))
 const score = ref(0)
 const lives = ref(3)
 const gameOver = ref(false)
@@ -407,11 +417,49 @@ const BASE_SCORES: LeaderEntry[] = [
 ]
 
 const leaderboard = computed<LeaderEntry[]>(() => {
-  const current: LeaderEntry = { name: PLAYER_NAME, score: score.value, flies: fliesCollected.value, time: elapsedMs.value, isCurrent: true }
-  return [...BASE_SCORES, ...loadSavedScores(), current]
+  const current: LeaderEntry = {
+    name: playerName.value || 'Player',
+    score: score.value,
+    flies: fliesCollected.value,
+    time: elapsedMs.value,
+    isCurrent: true,
+  }
+  const base = isOnline.value ? remoteScores.value : [...BASE_SCORES, ...loadSavedScores()]
+  return [...base, current]
     .sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
     .slice(0, 8)
 })
+
+async function fetchScores() {
+  try {
+    const res = await fetch('/api/scores')
+    if (!res.ok) throw new Error()
+    const data: LeaderEntry[] = await res.json()
+    remoteScores.value = data
+    isOnline.value = true
+  } catch {
+    isOnline.value = false
+  }
+}
+
+async function submitScore() {
+  if (score.value <= 0) return
+  const name = playerName.value.trim() || 'Player'
+  try {
+    const res = await fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score: score.value, flies: fliesCollected.value, time: elapsedMs.value }),
+    })
+    if (!res.ok) throw new Error()
+    const updated: LeaderEntry[] = await res.json()
+    remoteScores.value = updated
+    isOnline.value = true
+  } catch {
+    // API unavailable — fall back to localStorage already saved by persistScore()
+    isOnline.value = false
+  }
+}
 
 function formatTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -682,7 +730,8 @@ function advanceLevel() {
   if (currentLevel.value >= LEVEL_COUNT) {
     score.value += 2000
     won.value = true
-    persistScore({ name: PLAYER_NAME, score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
+    persistScore({ name: playerName.value || 'Player', score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
+    submitScore()
     stopBgMusic()
     return
   }
@@ -1215,6 +1264,7 @@ onMounted(() => {
   buildSpriteSheet()
   loadLevel(1); resetGame()
   raf = requestAnimationFrame(gameLoop)
+  fetchScores()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
@@ -1270,6 +1320,24 @@ onMounted(() => {
   color: #fff; font-weight: 800; padding: 8px 16px; border-radius: 999px;
   font-size: 0.9rem; white-space: nowrap;
 }
+
+.name-label {
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.name-input {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(148,163,184,0.3);
+  border-radius: 8px; padding: 7px 12px; color: #f1f5f9; font-size: 0.95rem;
+  font-family: inherit; outline: none; width: 130px;
+}
+.name-input:focus { border-color: rgba(74,222,128,0.5); }
+
+.online-badge {
+  font-size: 0.75rem; font-weight: 700; padding: 5px 12px;
+  border-radius: 999px; white-space: nowrap;
+}
+.online-badge.live  { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+.online-badge.local { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
 
 button {
   border: 0; border-radius: 999px; padding: 12px 18px; font-weight: 800;

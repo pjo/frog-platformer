@@ -1,5 +1,5 @@
 <template>
-  <div class="game-shell">
+  <div class="game-shell" :class="{ 'high-contrast': highContrast }" :style="{ '--ui-scale': uiScale }">
     <div class="sky-decor">
       <div class="cloud c1"></div>
       <div class="cloud c2"></div>
@@ -67,7 +67,15 @@
       </div>
     </main>
 
-    <GameLeaderboard :leaderboard="leaderboard" />
+    <GameLeaderboard
+      :leaderboard="leaderboard"
+      :highContrast="highContrast"
+      :reduceMotion="reduceMotion"
+      :uiScale="uiScale"
+      @update:highContrast="highContrast = $event"
+      @update:reduceMotion="reduceMotion = $event"
+      @update:uiScale="uiScale = $event"
+    />
   </div>
 </template>
 
@@ -110,8 +118,14 @@ const elapsedMs = ref(0)
 const currentLevel = ref(1)
 const activePower = ref('')
 const difficulty = ref<'easy' | 'normal' | 'hard'>('normal')
+const highContrast = ref(false)
+const reduceMotion = ref(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+const uiScale = ref(1)
 
 const totalFlies = computed(() => LEVELS[currentLevel.value - 1].flies.length)
+
+// Apply uiScale to HUD
+watch(uiScale, s => document.documentElement.style.setProperty('--ui-scale', String(s)), { immediate: true })
 
 // ── Audio ──────────────────────────────────────────────────────────────────────
 const { resumeAudio, sfxJump, sfxFly, sfxStomp, sfxHit, sfxCheckpoint, sfxPowerUp, sfxWin, startBgMusic, stopBgMusic, closeAudioCtx } = useAudio(muted, paused, gameOver, won)
@@ -297,6 +311,7 @@ function advanceLevel() {
 
 // ── Particles ──────────────────────────────────────────────────────────────────
 function burst(x: number, y: number, color: string, count: number, speed: number) {
+  if (reduceMotion.value) return
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2
     const s = speed * (0.4 + Math.random() * 0.9)
@@ -500,7 +515,7 @@ function update(dt: number) {
   updatePlayer(dts)
   updateHazards(); updateFlies(); updatePowerUps(); updateCheckpoints()
   updateEnemies(dts); updateParticles(dts); updateCamera(dts); updateWin()
-  if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7)
+  if (screenShake > 0) screenShake = reduceMotion.value ? 0 : Math.max(0, screenShake - 0.7)
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -844,5 +859,17 @@ canvas { width: 100%; height: auto; display: block; border-radius: 22px; backgro
 @media (max-width: 720px) {
   .game-shell { padding: 14px; }
   .controls-help { font-size: 0.85rem; }
+}
+
+/* ── High contrast mode ────────────────────────────── */
+.game-shell.high-contrast .card {
+  border-color: rgba(226,232,240,0.35);
+  background: rgba(15,23,42,0.88);
+}
+.game-shell.high-contrast button {
+  border: 1px solid rgba(226,232,240,0.4);
+}
+.game-shell.high-contrast .controls-help {
+  color: #f1f5f9;
 }
 </style>

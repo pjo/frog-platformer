@@ -40,8 +40,8 @@ defineProps<{
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px;
 }
 .stat { border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
-.stat .label { color: #94a3b8; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.08em; }
-.stat strong  { font-size: clamp(1.1rem, 1.5vw, 1.5rem); }
+.stat .label { color: #94a3b8; font-size: calc(0.88rem * var(--ui-scale, 1)); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat strong  { font-size: clamp(1.1rem, 1.5vw, calc(1.5rem * var(--ui-scale, 1))); }
 .power-active { border-color: rgba(250,204,21,0.5) !important; }
 .power-active strong { color: #fde047; }
 

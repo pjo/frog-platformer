@@ -23,6 +23,7 @@
         <button @click="togglePause">{{ paused ? 'Resume' : 'Pause' }}</button>
         <button @click="resetGame">Restart</button>
         <button @click="toggleMute">{{ muted ? 'Unmute' : 'Mute' }}</button>
+        <button @click="toggleFullscreen">{{ isFullscreen ? 'Exit Full' : 'Fullscreen' }}</button>
       </div>
     </header>
 
@@ -49,7 +50,7 @@
       </div>
     </section>
 
-    <main class="stage card">
+    <main class="stage card" ref="stageRef">
       <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
 
       <div class="mobile-controls">
@@ -80,7 +81,7 @@
       <div class="controls-help">
         <span>Move: &#8592; &#8594; / A D</span>
         <span>Jump: Space / W / &#8593;</span>
-        <span>P: Pause &nbsp; M: Mute &nbsp; R: Restart</span>
+        <span>P: Pause &nbsp; M: Mute &nbsp; R: Restart &nbsp; F: Fullscreen</span>
       </div>
     </main>
 
@@ -169,6 +170,8 @@ interface LevelDef {
 
 // ── Vue state ─────────────────────────────────────────────────────────────────
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const stageRef = ref<HTMLElement | null>(null)
+const isFullscreen = ref(false)
 const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
 const remoteScores = ref<LeaderEntry[]>([])
 const isOnline = ref(false)
@@ -753,6 +756,11 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 // ── Game logic ─────────────────────────────────────────────────────────────────
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
+function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
+function toggleFullscreen() {
+  if (!document.fullscreenElement) stageRef.value?.requestFullscreen()
+  else document.exitFullscreen()
+}
 
 function loseLife() {
   if (player.invincible > 0 || gameOver.value || won.value) return
@@ -1248,12 +1256,13 @@ function gameLoop(ts: number) {
 
 // ── Keyboard ───────────────────────────────────────────────────────────────────
 function onKeyDown(e: KeyboardEvent) {
-  const codes = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyA','KeyD','KeyW','KeyS','KeyP','KeyM','KeyR']
+  const codes = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyA','KeyD','KeyW','KeyS','KeyP','KeyM','KeyR','KeyF']
   if (!codes.includes(e.code)) return
   e.preventDefault(); resumeAudio()
-  if (e.code === 'KeyP') { togglePause(); return }
-  if (e.code === 'KeyM') { toggleMute();  return }
-  if (e.code === 'KeyR') { resetGame();   return }
+  if (e.code === 'KeyP') { togglePause();      return }
+  if (e.code === 'KeyM') { toggleMute();       return }
+  if (e.code === 'KeyR') { resetGame();        return }
+  if (e.code === 'KeyF') { toggleFullscreen(); return }
   keys.add(e.code)
 }
 function onKeyUp(e: KeyboardEvent) { keys.delete(e.code) }
@@ -1269,6 +1278,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('keyup', onKeyUp)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   cancelAnimationFrame(raf); stopBgMusic()
   if (audioCtx && audioCtx.state !== 'closed') audioCtx.close()
 })
@@ -1276,6 +1286,7 @@ onBeforeUnmount(() => {
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown, { passive: false })
   window.addEventListener('keyup', onKeyUp)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>
 
@@ -1360,6 +1371,14 @@ button:hover { transform: translateY(-1px); }
 .stage { max-width: 1440px; margin: 0 auto; padding: 14px; border-radius: 30px; }
 
 canvas { width: 100%; height: auto; display: block; border-radius: 22px; background: #7dd3fc; }
+
+.stage:fullscreen {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  background: #0b1120; border-radius: 0; padding: 0; max-width: 100%;
+}
+.stage:fullscreen canvas { width: auto; height: 100vh; max-width: 100vw; border-radius: 0; }
+.stage:fullscreen .mobile-controls { width: 100%; }
+.stage:fullscreen .controls-help { position: absolute; bottom: 8px; }
 
 /* Mobile controls */
 .mobile-controls {

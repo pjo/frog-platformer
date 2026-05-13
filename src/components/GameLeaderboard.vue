@@ -24,11 +24,12 @@
     <div class="card panel">
       <h2>Game Notes</h2>
       <ul>
-        <li>Stomp Smurfs from above. The boss needs 3 stomps.</li>
+        <li>Stomp Smurfs from above. Bosses appear from level 3 onward and take 3–6 stomps.</li>
         <li>Golden flies give 100 pts each.</li>
-        <li>Green mushroom = speed boost. Star = brief invincibility.</li>
-        <li>Checkpoint mushrooms save progress.</li>
-        <li>3 levels — Swamp, Cave, Sky. Defeat the boss to clear level 3.</li>
+        <li>Green orb = speed boost. Star = brief invincibility.</li>
+        <li>Checkpoint flags save your progress.</li>
+        <li>10 levels across 10 worlds: Swamp, Cave, Sky, Lava, Fortress, Ice, Desert, Jungle, Underwater, Void.</li>
+        <li>Defeat the final boss on level 10 to win!</li>
       </ul>
     </div>
   </section>

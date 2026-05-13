@@ -718,7 +718,7 @@ function drawLevelBanner() {
   ctx.save(); ctx.globalAlpha = alpha
   ctx.fillStyle = 'rgba(15,23,42,0.72)'; ctx.fillRect(0, VIEWPORT_H/2-52, VIEWPORT_W, 104)
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'
-  const names = ['Swamp Forest','Crystal Cave','Sky Kingdom','Lava Fields','Dark Fortress']
+  const names = ['Swamp Forest','Crystal Cave','Sky Kingdom','Lava Fields','Dark Fortress','Frozen Peaks','Scorched Sands','Jungle Depths','Sunken Reef','The Void']
   ctx.fillText(`Level ${currentLevel.value}: ${names[currentLevel.value-1]}`, VIEWPORT_W/2, VIEWPORT_H/2+14)
   ctx.restore()
   levelBannerTimer--

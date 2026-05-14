@@ -3,7 +3,7 @@ import { LEVELS } from '../levels/index'
 import { THEMES } from '../levels/themes'
 import { blit, aframe, SPRITE } from '../composables/useSpriteSheet'
 import { COLORS, ENGINE, DRAW_CFG } from '../utils/constants'
-import type { Enemy, PowerUp } from '../levels/types'
+import type { Enemy } from '../levels/types'
 
 export interface UIState {
   won: boolean
@@ -39,7 +39,7 @@ export class Renderer {
     
     this.drawParallax(state)
     this.drawWorld(state, ui)
-    this.drawOverlay(state, ui)
+    this.drawOverlay(ui)
     this.drawLevelBanner(state)
     
     this.ctx.restore()
@@ -240,7 +240,7 @@ export class Renderer {
     this.ctx.globalAlpha = 1
   }
 
-  private drawOverlay(state: GameState, ui: UIState) {
+  private drawOverlay(ui: UIState) {
     if (!ui.paused && !ui.gameOver && !ui.won) return
     this.ctx.fillStyle = COLORS.OVERLAY_BG; this.ctx.fillRect(0, 0, ENGINE.VIEWPORT_W, ENGINE.VIEWPORT_H)
     this.ctx.fillStyle = COLORS.TEXT_PRIMARY

@@ -95,16 +95,14 @@ import GameHud from './GameHud.vue'
 import GameLeaderboard from './GameLeaderboard.vue'
 import StartScreen from './StartScreen.vue'
 import { LEVELS } from '../levels/index'
-import { THEMES } from '../levels/themes'
 import type { Platform, Enemy, Fly, Hazard, CP, Particle, PowerUp, LeaderEntry } from '../levels/types'
 import { useAudio } from '../composables/useAudio'
-import { buildSpriteSheet, blit, aframe, SPRITE } from '../composables/useSpriteSheet'
+import { buildSpriteSheet } from '../composables/useSpriteSheet'
 import { Engine } from '../engine/Engine'
-import { Renderer } from '../engine/Renderer'
+import { Renderer, type UIState } from '../engine/Renderer'
 import { Physics } from '../engine/Physics'
-import type { UIState, GameState } from '../engine/Renderer'
-import { intersects, circleHitsRect } from '../utils/physics'
-import { ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS, COLORS } from '../utils/constants'
+import type { GameState } from '../engine/GameState'
+import { ENGINE, PLAYER_CFG, TIMERS, SCORING, COLORS } from '../utils/constants'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const VIEWPORT_W = ENGINE.VIEWPORT_W
@@ -377,36 +375,10 @@ function loseLife() {
   world.cameraX = Math.max(0, Math.min(player.x - VIEWPORT_W * ENGINE.CAMERA_OFFSET_RATIO, world.width - VIEWPORT_W))
 }
 
-function activateCP(cp: CP) {
-  if (cp.active) return
-  checkpoints.forEach(c => { c.active = false })
-  cp.active = true; checkpoint.x = cp.x - 20
-  score.value += SCORING.CHECKPOINT; player.checkpointPulse = TIMERS.CHECKPOINT_PULSE
-  sfxCheckpoint()
-  burst(cp.x + cp.w/2, cp.y, COLORS.PARTICLE_CHECKPOINT, 8, 4)
-}
-
 // ── Input ──────────────────────────────────────────────────────────────────────
 function mobileKey(code: string, down: boolean) {
   if (engine) engine.input.setKey(code, down)
   if (down) resumeAudio()
-}
-
-function handleInput() {
-  const left  = engine?.input.left ?? false
-  const right = engine?.input.right ?? false
-  const jump  = engine?.input.jump ?? false
-  const boost = player.speedTimer > 0 ? POWERS.SPEED_MULTIPLIER : 1
-
-  if (left  && !right) { player.vx -= player.accel * boost; player.facing = -1 }
-  if (right && !left)  { player.vx += player.accel * boost; player.facing =  1 }
-  if (jump) player.jumpBuffer = TIMERS.JUMP_BUFFER
-
-  if (player.jumpBuffer > 0 && (player.onGround || player.coyoteFrames > 0)) {
-    player.vy = -player.jumpForce
-    player.onGround = false; player.coyoteFrames = 0; player.jumpBuffer = 0; player.squish = 1
-    sfxJump()
-  }
 }
 
 function update(dt: number) {

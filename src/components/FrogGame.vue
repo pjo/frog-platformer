@@ -359,7 +359,8 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
-function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); difficulty.value = d; gameStarted.value = true; resetGame() }
+let clearInputNextFrame = false
+function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); clearInputNextFrame = true; difficulty.value = d; gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
@@ -396,6 +397,7 @@ function mobileKey(code: string, down: boolean) {
 
 function update(dt: number) {
   if (!gameStarted.value || paused.value || gameOver.value || won.value || !engine) return
+  if (clearInputNextFrame) { engine.input.clear(); clearInputNextFrame = false; return }
   elapsedMs.value += dt
 
   Physics.update(stateBridge, engine.input, dt, {

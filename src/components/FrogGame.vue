@@ -118,6 +118,7 @@ const gameStarted = ref(false)
 const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
 const remoteScores = ref<LeaderEntry[]>([])
 const isOnline = ref(false)
+const scoreSubmitted = ref(false)
 watch(playerName, name => localStorage.setItem('frog-player-name', name.trim() || 'Player'))
 const score = ref(0)
 const lives = ref(3)
@@ -163,6 +164,10 @@ const BASE_SCORES: LeaderEntry[] = [
 ]
 
 const leaderboard = computed<LeaderEntry[]>(() => {
+  const base = isOnline.value ? remoteScores.value : [...BASE_SCORES, ...loadSavedScores()]
+  if (score.value <= 0 || scoreSubmitted.value) {
+    return base.slice(0, 8)
+  }
   const current: LeaderEntry = {
     name: playerName.value || 'Player',
     score: score.value,
@@ -170,7 +175,6 @@ const leaderboard = computed<LeaderEntry[]>(() => {
     time: elapsedMs.value,
     isCurrent: true,
   }
-  const base = isOnline.value ? remoteScores.value : [...BASE_SCORES, ...loadSavedScores()]
   return [...base, current]
     .sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
     .slice(0, 8)
@@ -201,6 +205,7 @@ async function submitScore() {
     const updated: LeaderEntry[] = await res.json()
     remoteScores.value = updated
     isOnline.value = true
+    scoreSubmitted.value = true
   } catch {
     isOnline.value = false
   }
@@ -314,7 +319,7 @@ function resetEntities(full: boolean) {
 }
 
 function resetGame() {
-  score.value = 0; elapsedMs.value = 0
+  score.value = 0; elapsedMs.value = 0; scoreSubmitted.value = false
   lives.value = difficulty.value === 'easy' ? 5 : difficulty.value === 'hard' ? 2 : 3
   won.value = false; paused.value = false; gameOver.value = false
   currentLevel.value = 1; particles = []; screenShake = 0

@@ -202,7 +202,6 @@ async function submitScore() {
     remoteScores.value = updated
     isOnline.value = true
   } catch {
-    // API unavailable — fall back to localStorage already saved by persistScore()
     isOnline.value = false
   }
 }
@@ -367,7 +366,13 @@ function loseLife() {
   sfxHit()
   screenShake = 10
   burst(player.x + player.w/2, player.y + player.h/2, COLORS.PARTICLE_DAMAGE, 14, 5)
-  if (lives.value <= 0) { gameOver.value = true; stopBgMusic(); return }
+  if (lives.value <= 0) { 
+    gameOver.value = true
+    stopBgMusic()
+    persistScore({ name: playerName.value || 'Player', score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
+    submitScore()
+    return 
+  }
   player.invincible = TIMERS.INVINCIBLE_HIT
   player.x = checkpoint.x; player.y = PLAYER_CFG.RESPAWN_Y
   player.vx = 0; player.vy = PLAYER_CFG.RESPAWN_VY

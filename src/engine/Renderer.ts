@@ -2,7 +2,7 @@ import type { GameState } from './GameState'
 import { LEVELS } from '../levels/index'
 import { THEMES } from '../levels/themes'
 import { blit, aframe, SPRITE } from '../composables/useSpriteSheet'
-import { COLORS, ENGINE } from '../utils/constants'
+import { COLORS, ENGINE, DRAW_CFG } from '../utils/constants'
 import type { Enemy, PowerUp } from '../levels/types'
 
 export interface UIState {
@@ -110,7 +110,7 @@ export class Renderer {
     for (const f of state.flies) {
       if (f.taken) continue
       const bob = Math.sin(performance.now()*0.008 + f.x*0.02)*5
-      blit(this.ctx, this.spriteSheet!, SPRITE.rows.flySpin, frame, f.x-22, f.y-22+bob, 44, 44)
+      blit(this.ctx, this.spriteSheet!, SPRITE.rows.flySpin, frame, f.x+DRAW_CFG.FLY_OFFSET_X, f.y+DRAW_CFG.FLY_OFFSET_Y+bob, DRAW_CFG.FLY_DRAW_W, DRAW_CFG.FLY_DRAW_H)
     }
   }
 
@@ -174,7 +174,7 @@ export class Renderer {
       if (e.isBoss) { this.drawBoss(e, yb); continue }
       const row = e.mood==='alert' ? SPRITE.rows.smurfAlert : SPRITE.rows.smurfWalk
       const fr  = e.mood==='alert' ? aframe(7) : aframe(10)
-      blit(this.ctx, this.spriteSheet!, row, fr, e.x-10, e.y-18+yb, 64, 64, e.vx > 0)
+      blit(this.ctx, this.spriteSheet!, row, fr, e.x+DRAW_CFG.ENEMY_OFFSET_X, e.y+DRAW_CFG.ENEMY_OFFSET_Y+yb, DRAW_CFG.ENEMY_DRAW_W, DRAW_CFG.ENEMY_DRAW_H, e.vx > 0)
     }
   }
 
@@ -216,7 +216,7 @@ export class Renderer {
     if (state.player.invincible > 0 && Math.floor(state.player.invincible/6)%2===0) return
     if (state.player.starTimer > 0) {
       this.ctx.save(); this.ctx.globalAlpha = 0.32; this.ctx.fillStyle = COLORS.PU_STAR_BASE
-      this.ctx.beginPath(); this.ctx.arc(state.player.x+state.player.w/2, state.player.y+state.player.h/2, 46, 0, Math.PI*2); this.ctx.fill(); this.ctx.restore()
+      this.ctx.beginPath(); this.ctx.arc(state.player.x+state.player.w/2, state.player.y+state.player.h/2, DRAW_CFG.STAR_AURA_RADIUS, 0, Math.PI*2); this.ctx.fill(); this.ctx.restore()
     }
     let row = SPRITE.rows.frogIdle, frame = aframe(6)
     if      (ui.won)                           row = SPRITE.rows.frogVictory, frame = aframe(8)
@@ -226,9 +226,9 @@ export class Renderer {
 
     if (state.player.checkpointPulse > 0) {
       this.ctx.fillStyle = 'rgba(250,204,21,0.22)'
-      this.ctx.beginPath(); this.ctx.arc(state.player.x+state.player.w/2, state.player.y+state.player.h/2, 48+state.player.checkpointPulse*0.5, 0, Math.PI*2); this.ctx.fill()
+      this.ctx.beginPath(); this.ctx.arc(state.player.x+state.player.w/2, state.player.y+state.player.h/2, DRAW_CFG.PULSE_AURA_BASE_RADIUS+state.player.checkpointPulse*0.5, 0, Math.PI*2); this.ctx.fill()
     }
-    blit(this.ctx, this.spriteSheet!, row, frame, state.player.x-10, state.player.y-14, 74, 74, state.player.facing < 0)
+    blit(this.ctx, this.spriteSheet!, row, frame, state.player.x+DRAW_CFG.PLAYER_OFFSET_X, state.player.y+DRAW_CFG.PLAYER_OFFSET_Y, DRAW_CFG.PLAYER_DRAW_W, DRAW_CFG.PLAYER_DRAW_H, state.player.facing < 0)
   }
 
   private drawParticlesInWorld(state: GameState, ui: UIState) {

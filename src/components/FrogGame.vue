@@ -126,6 +126,7 @@ const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
 const playerEmail = ref(localStorage.getItem('frog-player-email') ?? '')
 const remoteScores = ref<LeaderEntry[]>([])
 const isOnline = ref(false)
+const loadingScores = ref(true)
 const scoreSubmitted = ref(false)
 const scorePending = ref(false)
 const nameTaken = ref(false)
@@ -175,7 +176,7 @@ const BASE_SCORES: LeaderEntry[] = [
 ]
 
 const leaderboard = computed<LeaderEntry[]>(() => {
-  const base = isOnline.value ? [...remoteScores.value] : [...BASE_SCORES]
+  const base = loadingScores.value ? [] : isOnline.value ? [...remoteScores.value] : [...BASE_SCORES]
   base.sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
   if (score.value <= 0 || scoreSubmitted.value) {
     return base.slice(0, 8)
@@ -201,6 +202,8 @@ async function fetchScores() {
     isOnline.value = true
   } catch {
     isOnline.value = false
+  } finally {
+    loadingScores.value = false
   }
 }
 

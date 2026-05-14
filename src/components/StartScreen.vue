@@ -5,6 +5,20 @@
       <h2>Frog vs. Smurf Invaders</h2>
       <p>10 levels of platforming mayhem — stomp Smurfs, collect flies, survive the bosses</p>
 
+      <div class="name-row">
+        <label class="name-label" for="start-name">Your name</label>
+        <input
+          id="start-name"
+          class="name-input"
+          :value="playerName"
+          @input="$emit('update:playerName', ($event.target as HTMLInputElement).value)"
+          maxlength="20"
+          placeholder="Player"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </div>
+
       <div class="difficulty-row">
         <button
           v-for="d in difficulties"
@@ -29,7 +43,8 @@
 import { ref } from 'vue'
 
 type Difficulty = 'easy' | 'normal' | 'hard'
-defineEmits<{ start: [difficulty: Difficulty] }>()
+defineProps<{ playerName: string }>()
+defineEmits<{ start: [difficulty: Difficulty]; 'update:playerName': [value: string] }>()
 
 const difficulty = ref<Difficulty>('normal')
 const difficulties: { value: Difficulty; label: string }[] = [
@@ -52,6 +67,20 @@ const difficulties: { value: Difficulty; label: string }[] = [
 .start-frog { font-size: 4rem; line-height: 1; margin-bottom: 12px; }
 .start-card h2 { margin: 0 0 10px; font-size: 1.9rem; color: #f1f5f9; }
 .start-card p  { margin: 0 0 22px; color: #94a3b8; line-height: 1.5; }
+
+.name-row {
+  display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 20px;
+}
+.name-label {
+  font-size: 0.85rem; color: #64748b; font-weight: 600; white-space: nowrap;
+}
+.name-input {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 10px; color: #f1f5f9; font-size: 0.95rem; font-weight: 600;
+  padding: 8px 14px; width: 160px; text-align: center; outline: none;
+}
+.name-input::placeholder { color: rgba(148,163,184,0.4); }
+.name-input:focus { border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 2px rgba(74,222,128,0.15); }
 
 .difficulty-row {
   display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;

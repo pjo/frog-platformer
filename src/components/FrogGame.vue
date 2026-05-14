@@ -33,7 +33,7 @@
     <main class="stage card" ref="stageRef">
       <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
 
-      <StartScreen v-if="!gameStarted" @start="startGame" />
+      <StartScreen v-if="!gameStarted" :playerName="playerName" @update:playerName="playerName = $event" @start="startGame" />
 
       <div class="mobile-controls">
         <div class="mobile-left">

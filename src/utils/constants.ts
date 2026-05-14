@@ -11,6 +11,7 @@ export const ENGINE = {
   FG_PARALLAX_SPEED: 0.4,
   MAX_DT_SCALE: 2,
   DT_NORMALIZER: 16.6667,
+  GRASS_TUFT_SPACING: 96,
 }
 
 export const PLAYER_CFG = {
@@ -59,4 +60,56 @@ export const SCORING = {
 
 export const POWERS = {
   SPEED_MULTIPLIER: 1.45,
+}
+
+export const COLORS = {
+  // Particles
+  PARTICLE_DAMAGE: '#ef4444',
+  PARTICLE_CHECKPOINT: '#f97316',
+  PARTICLE_FLY: '#facc15',
+  PARTICLE_SPEED: '#86efac',
+  PARTICLE_STAR: '#fde68a',
+  PARTICLE_BOSS_DEATH: '#f43f5e',
+  PARTICLE_ENEMY_DEATH: '#93c5fd',
+  PARTICLE_ENEMY_HIT: '#f97316',
+  
+  // Platform drawing
+  PLATFORM_STONE: '#64748b',
+  PLATFORM_STONE_HIGHLIGHT: 'rgba(255,255,255,0.15)',
+  PLATFORM_WOOD: '#8b5e34',
+  PLATFORM_WOOD_PATTERN: '#a16207',
+  PLATFORM_MOVING_HIGHLIGHT: 'rgba(250,204,21,0.28)',
+  
+  // Entities
+  CHECKPOINT_POLE: '#78350f',
+  CHECKPOINT_ACTIVE: '#f97316',
+  CHECKPOINT_INACTIVE: '#cbd5e1',
+  HAZARD_LOG: '#8b5e34',
+  STAR_GLOW: 'rgba(250, 204, 21, 0.4)',
+  
+  // UI in Canvas
+  BOSS_HP_BG: '#1e293b',
+  BOSS_HP_FILL: '#ef4444',
+  BOSS_TITLE_SHADOW: 'rgba(15, 23, 42, 0.6)',
+  BOSS_TITLE: '#f1f5f9',
+  BOSS_BODY: '#1e3a8a',
+  BOSS_CROWN: '#fde047',
+  BOSS_EYE_PUPIL: '#ef4444',
+  BOSS_HP_BG_DARKEN: 'rgba(0,0,0,0.55)',
+  BOSS_HP_HIGH: '#22c55e',
+  BOSS_HP_MED: '#fbbf24',
+  BOSS_HP_LOW: '#ef4444',
+  
+  // Elements
+  PU_SPEED_BASE: '#22c55e',
+  PU_SPEED_GLINT: '#bbf7d0',
+  PU_SPEED_TEXT: '#052e16',
+  PU_STAR_BASE: '#fde047',
+  PU_STAR_TEXT: '#78350f',
+  HAZARD_GRAD_START: '#22c55e',
+  HAZARD_GRAD_END: '#15803d',
+  GATE_LOCKED: '#7f1d1d',
+  GATE_UNLOCKED: '#4b5563',
+  TEXT_PRIMARY: '#ffffff',
+  OVERLAY_BG: 'rgba(15,23,42,0.75)',
 }

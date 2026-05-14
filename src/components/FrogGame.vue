@@ -99,8 +99,12 @@ import { THEMES } from '../levels/themes'
 import type { Platform, Enemy, Fly, Hazard, CP, Particle, PowerUp, LeaderEntry } from '../levels/types'
 import { useAudio } from '../composables/useAudio'
 import { buildSpriteSheet, blit, aframe, SPRITE } from '../composables/useSpriteSheet'
+import { Engine } from '../engine/Engine'
+import { Renderer } from '../engine/Renderer'
+import { Physics } from '../engine/Physics'
+import type { UIState, GameState } from '../engine/Renderer'
 import { intersects, circleHitsRect } from '../utils/physics'
-import { ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS } from '../utils/constants'
+import { ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS, COLORS } from '../utils/constants'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const VIEWPORT_W = ENGINE.VIEWPORT_W
@@ -212,10 +216,8 @@ function formatTime(ms: number): string {
 const displayTime = computed(() => formatTime(elapsedMs.value))
 
 // ── Engine variables ──────────────────────────────────────────────────────────
-let ctx!: CanvasRenderingContext2D
-let raf = 0
-let lastTime = 0
-const keys = new Set<string>()
+let engine: Engine | null = null
+let renderer: Renderer | null = null
 let screenShake = 0
 let levelBannerTimer = 0
 let particles: Particle[] = []
@@ -242,6 +244,28 @@ let checkpoints: CP[] = []
 let powerUps: PowerUp[] = []
 let finishGate = { x: 4890, y: 362, w: 60, h: 140 }
 let enemyInitData: Array<{ x: number; vx: number; hp: number }> = []
+
+// ── State Bridge (Phase Migration) ────────────────────────────────────────────
+const stateBridge = {
+  get world() { return world },
+  get checkpoint() { return checkpoint },
+  get player() { return player },
+  get platforms() { return platforms }, set platforms(v) { platforms = v },
+  get enemies() { return enemies }, set enemies(v) { enemies = v },
+  get flies() { return flies }, set flies(v) { flies = v },
+  get hazards() { return hazards }, set hazards(v) { hazards = v },
+  get checkpoints() { return checkpoints }, set checkpoints(v) { checkpoints = v },
+  get powerUps() { return powerUps }, set powerUps(v) { powerUps = v },
+  get finishGate() { return finishGate }, set finishGate(v) { finishGate = v },
+  get enemyInitData() { return enemyInitData }, set enemyInitData(v) { enemyInitData = v },
+  get particles() { return particles }, set particles(v) { particles = v },
+  get screenShake() { return screenShake }, set screenShake(v) { screenShake = v },
+  get levelBannerTimer() { return levelBannerTimer }, set levelBannerTimer(v) { levelBannerTimer = v },
+  get currentLevel() { return currentLevel.value }, set currentLevel(v) { currentLevel.value = v },
+  get score() { return score.value }, set score(v) { score.value = v },
+  get fliesCollected() { return fliesCollected.value }, set fliesCollected(v) { fliesCollected.value = v },
+  get lives() { return lives.value }, set lives(v) { lives.value = v },
+} as unknown as GameState
 
 // ── Level management ───────────────────────────────────────────────────────────
 function loadLevel(n: number) {
@@ -344,7 +368,7 @@ function loseLife() {
   lives.value--
   sfxHit()
   screenShake = 10
-  burst(player.x + player.w/2, player.y + player.h/2, '#ef4444', 14, 5)
+  burst(player.x + player.w/2, player.y + player.h/2, COLORS.PARTICLE_DAMAGE, 14, 5)
   if (lives.value <= 0) { gameOver.value = true; stopBgMusic(); return }
   player.invincible = TIMERS.INVINCIBLE_HIT
   player.x = checkpoint.x; player.y = PLAYER_CFG.RESPAWN_Y
@@ -359,19 +383,19 @@ function activateCP(cp: CP) {
   cp.active = true; checkpoint.x = cp.x - 20
   score.value += SCORING.CHECKPOINT; player.checkpointPulse = TIMERS.CHECKPOINT_PULSE
   sfxCheckpoint()
-  burst(cp.x + cp.w/2, cp.y, '#f97316', 8, 4)
+  burst(cp.x + cp.w/2, cp.y, COLORS.PARTICLE_CHECKPOINT, 8, 4)
 }
 
 // ── Input ──────────────────────────────────────────────────────────────────────
 function mobileKey(code: string, down: boolean) {
-  down ? keys.add(code) : keys.delete(code)
+  if (engine) engine.input.setKey(code, down)
   if (down) resumeAudio()
 }
 
 function handleInput() {
-  const left  = keys.has('ArrowLeft')  || keys.has('KeyA')
-  const right = keys.has('ArrowRight') || keys.has('KeyD')
-  const jump  = keys.has('Space')      || keys.has('ArrowUp') || keys.has('KeyW')
+  const left  = engine?.input.left ?? false
+  const right = engine?.input.right ?? false
+  const jump  = engine?.input.jump ?? false
   const boost = player.speedTimer > 0 ? POWERS.SPEED_MULTIPLIER : 1
 
   if (left  && !right) { player.vx -= player.accel * boost; player.facing = -1 }
@@ -385,417 +409,87 @@ function handleInput() {
   }
 }
 
-// ── Physics ────────────────────────────────────────────────────────────────────
-function updatePlayer(dts: number) {
-  handleInput()
-  player.jumpBuffer    = Math.max(0, player.jumpBuffer - 1)
-  player.coyoteFrames  = Math.max(0, player.coyoteFrames - 1)
-  player.invincible    = Math.max(0, player.invincible - 1)
-  player.checkpointPulse = Math.max(0, player.checkpointPulse - 1)
-  player.speedTimer    = Math.max(0, player.speedTimer - 1)
-  player.starTimer     = Math.max(0, player.starTimer - 1)
-
-  if      (player.starTimer > 0)  activePower.value = 'Star!'
-  else if (player.speedTimer > 0) activePower.value = 'Speed!'
-  else                            activePower.value = ''
-
-  const maxSpd = player.speedTimer > 0 ? player.maxSpeed * POWERS.SPEED_MULTIPLIER : player.maxSpeed
-  player.vx *= (player.onGround ? player.dragGround : player.dragAir)
-  if (Math.abs(player.vx) < PLAYER_CFG.MIN_SPEED_THRESHOLD) player.vx = 0
-  player.vx = Math.max(-maxSpd, Math.min(maxSpd, player.vx))
-
-  player.vy = Math.min(ENGINE.MAX_FALL_SPEED, player.vy + world.gravity * dts)
-  player.x += player.vx * dts; resolveH()
-  const wasGround = player.onGround
-  player.y += player.vy * dts; player.onGround = false; resolveV()
-  if (!player.onGround && wasGround) player.coyoteFrames = TIMERS.COYOTE_FRAMES
-  if (player.y > world.height + ENGINE.DEATH_Y_OFFSET) loseLife()
-  player.x = Math.max(0, Math.min(player.x, world.width - player.w))
-  player.squish += (0 - player.squish) * PLAYER_CFG.SQUISH_RECOVERY
-}
-
-function resolveH() {
-  for (const p of platforms) {
-    if (!intersects(player, p)) continue
-    player.x = player.vx > 0 ? p.x - player.w : p.x + p.w
-    player.vx = 0
-  }
-}
-function resolveV() {
-  for (const p of platforms) {
-    if (!intersects(player, p)) continue
-    if (player.vy > 0) { player.y = p.y - player.h; player.vy = 0; player.onGround = true }
-    else               { player.y = p.y + p.h; player.vy = 0 }
-  }
-}
-
-function updateMovingPlatforms(dts: number) {
-  for (const p of platforms) {
-    if (!p.vx) continue
-    p.x += p.vx * dts
-    if (p.minPX !== undefined && p.maxPX !== undefined &&
-        (p.x <= p.minPX || p.x + p.w >= p.maxPX)) p.vx! *= -1
-  }
-}
-
-function updateCamera(dts: number) {
-  const target = Math.max(0, Math.min(player.x - VIEWPORT_W * ENGINE.CAMERA_OFFSET_RATIO, world.width - VIEWPORT_W))
-  world.cameraX += (target - world.cameraX) * Math.min(1, ENGINE.CAMERA_LAG * dts)
-  world.bgOffset += ENGINE.BG_PARALLAX_SPEED * dts
-  world.fgOffset += ENGINE.FG_PARALLAX_SPEED * dts
-}
-
-function updateFlies() {
-  for (const f of flies) {
-    if (f.taken || !circleHitsRect(f.x, f.y, f.r + 6, player)) continue
-    f.taken = true; fliesCollected.value++; score.value += SCORING.FLY
-    sfxFly(); burst(f.x, f.y, '#facc15', 8, 4)
-  }
-}
-
-function updatePowerUps() {
-  for (const pu of powerUps) {
-    if (pu.taken || !circleHitsRect(pu.x, pu.y, pu.r + 8, player)) continue
-    pu.taken = true; sfxPowerUp()
-    if (pu.type === 'speed') {
-      player.speedTimer = TIMERS.SPEED_BOOST
-      burst(pu.x, pu.y, '#86efac', 12, 5)
-    } else {
-      player.starTimer = TIMERS.STAR_POWER; player.invincible = TIMERS.STAR_POWER
-      burst(pu.x, pu.y, '#fde68a', 16, 6)
-    }
-  }
-}
-
-function updateEnemies(dts: number) {
-  for (const e of enemies) {
-    if (e.dying) { e.deathTimer = Math.max(0, e.deathTimer - dts); continue }
-    if (!e.alive) continue
-
-    e.x += e.vx * dts; e.bob += 0.04 * dts
-    e.mood = Math.abs(player.x - e.x) < 160 ? 'alert' : 'walk'
-    if (e.x <= e.minX || e.x + e.w >= e.maxX) e.vx *= -1
-    if (e.isBoss && Math.abs(player.x - e.x) < 320) e.vx = Math.sign(e.vx) * 3.8
-
-    if (!intersects(player, e)) continue
-
-    const stomped = player.vy > 1 && (player.y + player.h - e.y) < (e.isBoss ? 32 : 22)
-    if (stomped || player.starTimer > 0) {
-      e.hp--
-      const killed = e.hp <= 0
-      if (killed) {
-        e.alive = false; e.dying = true; e.deathTimer = TIMERS.DEATH_ANIMATION
-        burst(e.x + e.w/2, e.y + e.h/2, e.isBoss ? '#f43f5e' : '#93c5fd', e.isBoss ? 26 : 10, e.isBoss ? 9 : 4)
-        score.value += e.isBoss ? SCORING.BOSS_KILL : SCORING.ENEMY_KILL
-      } else {
-        burst(e.x + e.w/2, e.y, '#f97316', 8, 4)
-        score.value += 100 // partial damage score
-      }
-      player.vy = e.isBoss ? PLAYER_CFG.BOUNCE_BOSS : PLAYER_CFG.BOUNCE_NORMAL; player.squish = PLAYER_CFG.SQUISH_STOMP_VAL
-      sfxStomp(); screenShake = e.isBoss ? 9 : 4
-    } else if (player.starTimer === 0) {
-      loseLife()
-    }
-  }
-}
-
-function updateHazards() {
-  for (const h of hazards) { if (intersects(player, h)) { loseLife(); break } }
-}
-function updateCheckpoints() {
-  for (const cp of checkpoints) { if (intersects(player, cp)) activateCP(cp) }
-}
-function updateParticles(dts: number) {
-  for (const p of particles) { p.x += p.vx*dts; p.y += p.vy*dts; p.vy += 0.2*dts; p.life -= dts }
-  particles = particles.filter(p => p.life > 0)
-}
-function updateWin() {
-  if (won.value || gameOver.value) return
-  if (currentLevel.value === LEVEL_COUNT) {
-    if (enemies.some(e => e.isBoss && e.alive)) return
-  }
-  if (intersects(player, finishGate)) advanceLevel()
-}
-
 function update(dt: number) {
-  if (!gameStarted.value || paused.value || gameOver.value || won.value) return
-  const dts = Math.min(2, dt / 16.6667)
+  if (!gameStarted.value || paused.value || gameOver.value || won.value || !engine) return
   elapsedMs.value += dt
-  updateMovingPlatforms(dts)
-  updatePlayer(dts)
-  updateHazards(); updateFlies(); updatePowerUps(); updateCheckpoints()
-  updateEnemies(dts); updateParticles(dts); updateCamera(dts); updateWin()
-  if (screenShake > 0) screenShake = reduceMotion.value ? 0 : Math.max(0, screenShake - 0.7)
+
+  Physics.update(stateBridge, engine.input, dt, {
+    onScore: (pts) => { score.value += pts },
+    onFlyCollected: () => { fliesCollected.value++ },
+    onLifeLost: loseLife,
+    onAdvanceLevel: advanceLevel,
+    sfx: (name) => {
+      if (name === 'jump') sfxJump()
+      if (name === 'fly') sfxFly()
+      if (name === 'powerup') sfxPowerUp()
+      if (name === 'stomp') sfxStomp()
+      if (name === 'hit') sfxHit()
+      if (name === 'checkpoint') sfxCheckpoint()
+    },
+    burst: burst
+  }, reduceMotion.value)
+
+  if (player.starTimer > 0) activePower.value = 'Star!'
+  else if (player.speedTimer > 0) activePower.value = 'Speed!'
+  else activePower.value = ''
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
-function rr(cx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  cx.beginPath()
-  cx.moveTo(x+r, y); cx.lineTo(x+w-r, y); cx.quadraticCurveTo(x+w, y, x+w, y+r)
-  cx.lineTo(x+w, y+h-r); cx.quadraticCurveTo(x+w, y+h, x+w-r, y+h)
-  cx.lineTo(x+r, y+h); cx.quadraticCurveTo(x, y+h, x, y+h-r)
-  cx.lineTo(x, y+r); cx.quadraticCurveTo(x, y, x+r, y); cx.closePath(); cx.fill()
-}
-
-function drawParallax() {
-  const theme = THEMES[LEVELS[currentLevel.value - 1].theme]
-  theme.drawParallax(ctx, world.cameraX, world.width, VIEWPORT_W, VIEWPORT_H)
-}
-
-function drawWorld() {
-  ctx.save(); ctx.translate(-world.cameraX, 0)
-  drawGround(); drawPlatforms(); drawCheckpoints(); drawFlies()
-  drawPowerUps(); drawHazards(); drawEnemies(); drawFinishGate()
-  drawPlayer(); drawParticlesInWorld()
-  ctx.restore()
-}
-
-function drawGround() {
-  const theme = THEMES[LEVELS[currentLevel.value - 1].theme]
-  ctx.fillStyle = theme.groundColor; ctx.fillRect(0, 560, world.width, 160)
-  for (let i = 0; i < 62; i++) {
-    const x = i*96 + (Math.sin(i*3.1 + world.fgOffset*0.02)+1)*16
-    ctx.fillStyle = i%3===0 ? theme.groundAccentA : theme.groundAccentB
-    ctx.beginPath(); ctx.moveTo(x,560); ctx.lineTo(x+10,530); ctx.lineTo(x+18,560); ctx.closePath(); ctx.fill()
-  }
-}
-
-function drawPlatforms() {
-  for (const p of platforms) {
-    if (p.type === 'ground') continue
-    if (p.type === 'stone') {
-      ctx.fillStyle = '#64748b'; rr(ctx, p.x, p.y, p.w, p.h, 8)
-      ctx.fillStyle = 'rgba(255,255,255,0.15)'; rr(ctx, p.x+4, p.y+4, p.w-8, 6, 4)
-    } else {
-      ctx.fillStyle = '#8b5e34'; rr(ctx, p.x, p.y, p.w, p.h, 10)
-      ctx.fillStyle = '#a16207'
-      for (let i = 0; i < p.w; i+=28) ctx.fillRect(p.x+i, p.y+4, 16, p.h-8)
-    }
-    if (p.vx) {
-      ctx.fillStyle = 'rgba(250,204,21,0.28)'; rr(ctx, p.x, p.y, p.w, p.h, 10)
-    }
-  }
-}
-
-function drawCheckpoints() {
-  for (const cp of checkpoints) {
-    ctx.fillStyle = '#78350f'; ctx.fillRect(cp.x+10, cp.y, 8, cp.h)
-    const pulse = cp.active ? 1 + Math.sin(performance.now()*0.008)*0.06 : 1
-    ctx.save(); ctx.translate(cp.x+18, cp.y+10); ctx.scale(pulse, pulse)
-    ctx.fillStyle = cp.active ? '#f97316' : '#cbd5e1'
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(46,14); ctx.lineTo(0,28); ctx.closePath(); ctx.fill()
-    ctx.restore()
-  }
-}
-
-function drawFlies() {
-  const frame = aframe(12)
-  for (const f of flies) {
-    if (f.taken) continue
-    const bob = Math.sin(performance.now()*0.008 + f.x*0.02)*5
-    blit(ctx, spriteSheet!, SPRITE.rows.flySpin, frame, f.x-22, f.y-22+bob, 44, 44)
-  }
-}
-
-function drawPowerUps() {
-  for (const pu of powerUps) {
-    if (pu.taken) continue
-    const bob = Math.sin(performance.now()*0.005 + pu.x*0.01)*4
-    const pulse = 1 + Math.sin(performance.now()*0.006)*0.1
-    ctx.save(); ctx.translate(pu.x, pu.y+bob); ctx.scale(pulse, pulse)
-    if (pu.type === 'speed') {
-      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(0,0,pu.r,0,Math.PI*2); ctx.fill()
-      ctx.fillStyle = '#bbf7d0'; ctx.beginPath(); ctx.arc(-4,-4,5,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(4,-2,4,0,Math.PI*2); ctx.fill()
-      ctx.fillStyle = '#052e16'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('S', 0, 4)
-    } else {
-      ctx.fillStyle = '#fde047'; drawStarShape(0, 0, pu.r, pu.r*0.45, 5)
-      ctx.fillStyle = '#78350f'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('\u2605', 0, 3)
-    }
-    ctx.restore()
-  }
-}
-
-function drawStarShape(cx: number, cy: number, or: number, ir: number, pts: number) {
-  ctx.beginPath()
-  for (let i = 0; i < pts*2; i++) {
-    const a = (i*Math.PI/pts) - Math.PI/2
-    const r = i%2===0 ? or : ir
-    i===0 ? ctx.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r) : ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r)
-  }
-  ctx.closePath(); ctx.fill()
-}
-
-function drawHazards() {
-  for (const h of hazards) {
-    const g = ctx.createLinearGradient(h.x, h.y, h.x, h.y+h.h)
-    g.addColorStop(0,'#22c55e'); g.addColorStop(1,'#15803d'); ctx.fillStyle = g
-    rr(ctx, h.x, h.y, h.w, h.h, 14)
-    for (let i = 0; i < h.w; i+=18) {
-      ctx.fillStyle = 'rgba(255,255,255,0.2)'
-      ctx.beginPath(); ctx.arc(h.x+i+8, h.y+8+Math.sin((i+performance.now()*0.02)*0.2)*2, 4, 0, Math.PI*2); ctx.fill()
-    }
-  }
-}
-
-function drawEnemies() {
-  for (const e of enemies) {
-    if (e.dying) {
-      if (e.deathTimer <= 0) continue
-      const t = 1 - e.deathTimer/20
-      ctx.save(); ctx.globalAlpha = Math.max(0, 1-t)
-      ctx.translate(e.x + e.w/2, e.y + e.h); ctx.scale(1 + t*1.4, Math.max(0.05, 1 - t*0.95))
-      if (e.isBoss) {
-        ctx.fillStyle = '#f43f5e'; rr(ctx, -e.w/2, -12, e.w, 12, 4)
-      } else if (spriteSheet) {
-        ctx.imageSmoothingEnabled = false
-        ctx.drawImage(spriteSheet, 0, SPRITE.rows.smurfWalk*SPRITE.fh, SPRITE.fw, SPRITE.fh, -22, -38, 44, 38)
-      }
-      ctx.restore(); continue
-    }
-    if (!e.alive) continue
-    const yb = Math.sin(performance.now()*0.01 + e.bob)*1.6
-    if (e.isBoss) { drawBoss(e, yb); continue }
-    const row = e.mood==='alert' ? SPRITE.rows.smurfAlert : SPRITE.rows.smurfWalk
-    const fr  = e.mood==='alert' ? aframe(7) : aframe(10)
-    blit(ctx, spriteSheet!, row, fr, e.x-10, e.y-18+yb, 64, 64, e.vx > 0)
-  }
-}
-
-function drawBoss(e: Enemy, yb: number) {
-  const pulse = 1 + Math.sin(performance.now()*0.005)*0.04
-  ctx.save()
-  ctx.translate(e.x + e.w/2, e.y + e.h/2 + yb)
-  ctx.scale(e.vx > 0 ? -pulse : pulse, pulse)
-  ctx.fillStyle = '#1e3a8a'; rr(ctx, -44, -34, 88, 68, 14)
-  ctx.fillStyle = '#fde047'
-  ctx.beginPath(); ctx.moveTo(-30,-34); ctx.lineTo(-22,-56); ctx.lineTo(-8,-38); ctx.lineTo(0,-58); ctx.lineTo(8,-38); ctx.lineTo(22,-56); ctx.lineTo(30,-34); ctx.closePath(); ctx.fill()
-  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-15,-10,10,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(15,-10,10,0,Math.PI*2); ctx.fill()
-  ctx.fillStyle = '#ef4444';  ctx.beginPath(); ctx.arc(-15,-10, 6,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(15,-10, 6,0,Math.PI*2); ctx.fill()
-  ctx.fillStyle = '#ffffff';  ctx.beginPath(); ctx.arc(-13,-12, 2,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(17,-12, 2,0,Math.PI*2); ctx.fill()
-  ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3
-  ctx.beginPath(); ctx.arc(0, 10, 20, 0, Math.PI); ctx.stroke()
-  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(-36,-52,72,9)
-  ctx.fillStyle = e.hp===3 ? '#22c55e' : e.hp===2 ? '#fbbf24' : '#ef4444'
-  ctx.fillRect(-36,-52, 72*(e.hp/e.maxHp), 9)
-  ctx.restore()
-}
-
-function drawFinishGate() {
-  const bossLocked = currentLevel.value === LEVEL_COUNT && enemies.some(e => e.isBoss && e.alive)
-  ctx.fillStyle = bossLocked ? '#7f1d1d' : '#4b5563'
-  ctx.fillRect(finishGate.x, finishGate.y, 10, finishGate.h)
-  ctx.fillRect(finishGate.x+finishGate.w-10, finishGate.y, 10, finishGate.h)
-  ctx.fillRect(finishGate.x, finishGate.y, finishGate.w, 10)
-  const pulse = 1 + Math.sin(performance.now()*0.006)*0.04
-  ctx.save(); ctx.translate(finishGate.x+finishGate.w/2, finishGate.y+18); ctx.scale(pulse, pulse)
-  ctx.fillStyle = bossLocked ? '#dc2626' : '#f43f5e'
-  rr(ctx, -36, 0, 72, 34, 10)
-  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'
-  ctx.fillText(bossLocked ? 'BOSS!' : currentLevel.value < LEVEL_COUNT ? `LVL ${currentLevel.value+1}` : 'EXIT', 0, 24)
-  ctx.restore()
-}
-
-function drawPlayer() {
-  if (player.invincible > 0 && Math.floor(player.invincible/6)%2===0) return
-  if (player.starTimer > 0) {
-    ctx.save(); ctx.globalAlpha = 0.32; ctx.fillStyle = '#fde047'
-    ctx.beginPath(); ctx.arc(player.x+player.w/2, player.y+player.h/2, 46, 0, Math.PI*2); ctx.fill(); ctx.restore()
-  }
-  let row = SPRITE.rows.frogIdle, frame = aframe(6)
-  if      (won.value)                row = SPRITE.rows.frogVictory, frame = aframe(8)
-  else if (player.invincible > 100)  row = SPRITE.rows.frogHurt,   frame = aframe(8)
-  else if (!player.onGround)         row = SPRITE.rows.frogJump,   frame = Math.min(5, Math.floor(Math.max(-12, Math.min(12, player.vy+12))/4))
-  else if (Math.abs(player.vx) > 1.1) row = SPRITE.rows.frogRun,  frame = aframe(12)
-
-  if (player.checkpointPulse > 0) {
-    ctx.fillStyle = 'rgba(250,204,21,0.22)'
-    ctx.beginPath(); ctx.arc(player.x+player.w/2, player.y+player.h/2, 48+player.checkpointPulse*0.5, 0, Math.PI*2); ctx.fill()
-  }
-  blit(ctx, spriteSheet!, row, frame, player.x-10, player.y-14, 74, 74, player.facing < 0)
-}
-
-function drawParticlesInWorld() {
-  for (const p of particles) {
-    ctx.globalAlpha = Math.max(0, p.life/p.maxLife)
-    ctx.fillStyle = p.color
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill()
-  }
-  ctx.globalAlpha = 1
-}
-
-function drawOverlay() {
-  if (!paused.value && !gameOver.value && !won.value) return
-  ctx.fillStyle = 'rgba(15,23,42,0.48)'; ctx.fillRect(0, 0, VIEWPORT_W, VIEWPORT_H)
-  ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 54px sans-serif'
-  if      (won.value)      ctx.fillText('Victory!',  VIEWPORT_W/2, VIEWPORT_H/2-20)
-  else if (gameOver.value) ctx.fillText('Game Over', VIEWPORT_W/2, VIEWPORT_H/2-20)
-  else                     ctx.fillText('Paused',    VIEWPORT_W/2, VIEWPORT_H/2-20)
-  ctx.font = '24px sans-serif'
-  const sub = won.value      ? `Final score ${score.value} \u00B7 ${fliesCollected.value}/${totalFlies.value} flies \u00B7 All levels cleared!`
-            : gameOver.value ? 'Press R to try again.'
-            : 'Press P or tap Resume.'
-  ctx.fillText(sub, VIEWPORT_W/2, VIEWPORT_H/2+28)
-}
-
-function drawLevelBanner() {
-  if (levelBannerTimer <= 0) return
-  const alpha = Math.min(1, levelBannerTimer/40)
-  ctx.save(); ctx.globalAlpha = alpha
-  ctx.fillStyle = 'rgba(15,23,42,0.72)'; ctx.fillRect(0, VIEWPORT_H/2-52, VIEWPORT_W, 104)
-  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'
-  const names = ['Swamp Forest','Crystal Cave','Sky Kingdom','Lava Fields','Dark Fortress','Frozen Peaks','Scorched Sands','Jungle Depths','Sunken Reef','The Void']
-  ctx.fillText(`Level ${currentLevel.value}: ${names[currentLevel.value-1]}`, VIEWPORT_W/2, VIEWPORT_H/2+14)
-  ctx.restore()
-  levelBannerTimer--
-}
-
+// ── Render ─────────────────────────────────────────────────────────────────────
 function render() {
-  const sx = screenShake > 0 ? (Math.random()-0.5)*screenShake : 0
-  const sy = screenShake > 0 ? (Math.random()-0.5)*screenShake : 0
-  ctx.save(); ctx.translate(sx, sy)
-  drawParallax(); drawWorld(); drawOverlay(); drawLevelBanner()
-  ctx.restore()
+  if (!renderer || !engine) return
+  
+  const ui: UIState = {
+    won: won.value,
+    gameOver: gameOver.value,
+    paused: paused.value,
+    fliesCollected: fliesCollected.value,
+    totalFlies: totalFlies.value,
+    score: score.value,
+    reduceMotion: reduceMotion.value
+  }
+
+  renderer.render(stateBridge, ui)
 }
 
-function gameLoop(ts: number) {
-  if (!lastTime) lastTime = ts
-  const dt = Math.min(40, ts - lastTime); lastTime = ts
-  update(dt); render()
-  raf = requestAnimationFrame(gameLoop)
-}
-
-// ── Keyboard ───────────────────────────────────────────────────────────────────
+// ── Keyboard (Meta Keys) ───────────────────────────────────────────────────────────
 function onKeyDown(e: KeyboardEvent) {
-  const codes = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyA','KeyD','KeyW','KeyS','KeyP','KeyM','KeyR','KeyF']
+  const target = e.target as HTMLElement
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+  
+  const codes = ['KeyP','KeyM','KeyR','KeyF']
   if (!codes.includes(e.code)) return
   e.preventDefault(); resumeAudio()
   if (e.code === 'KeyP') { togglePause();      return }
   if (e.code === 'KeyM') { toggleMute();       return }
   if (e.code === 'KeyR') { resetGame();        return }
   if (e.code === 'KeyF') { toggleFullscreen(); return }
-  keys.add(e.code)
 }
-function onKeyUp(e: KeyboardEvent) { keys.delete(e.code) }
 
 onMounted(async () => {
-  ctx = canvasRef.value!.getContext('2d')!
-  ctx.imageSmoothingEnabled = false
+  engine = new Engine(canvasRef.value!)
+  renderer = new Renderer(engine.ctx)
+  
+  engine.onUpdate = update
+  engine.onRender = render
+  
   spriteSheet = await buildSpriteSheet()
+  renderer.spriteSheet = spriteSheet
+  
   loadLevel(1); resetEntities(true)
-  raf = requestAnimationFrame(gameLoop)
+  engine.start()
   fetchScores()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('keyup', onKeyUp)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
-  cancelAnimationFrame(raf); stopBgMusic()
+  if (engine) engine.stop()
+  stopBgMusic()
   closeAudioCtx()
 })
 // register after resetGame so audio is lazily created
 onMounted(() => {
-  window.addEventListener('keydown', onKeyDown, { passive: false })
-  window.addEventListener('keyup', onKeyUp)
+  window.addEventListener('keydown', onKeyDown)
   document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>

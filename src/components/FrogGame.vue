@@ -33,7 +33,14 @@
     <main class="stage card" ref="stageRef">
       <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
 
-      <StartScreen v-if="!gameStarted" :playerName="playerName" @update:playerName="playerName = $event" @start="startGame" />
+      <StartScreen v-if="!gameStarted" :playerName="playerName" :playerEmail="playerEmail" @update:playerName="playerName = $event" @update:playerEmail="playerEmail = $event" @start="startGame" />
+
+      <div v-if="scorePending && (gameOver || won)" class="score-status pending">
+        📧 Check your email — click the link to publish your score!
+      </div>
+      <div v-if="nameTaken && (gameOver || won)" class="score-status taken">
+        ⚠ This name is registered to a different email. Use a different name next time.
+      </div>
 
       <div v-if="gameStarted" class="mobile-controls">
         <div class="mobile-left">
@@ -116,10 +123,14 @@ const stageRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 const gameStarted = ref(false)
 const playerName = ref(localStorage.getItem('frog-player-name') ?? 'Player')
+const playerEmail = ref(localStorage.getItem('frog-player-email') ?? '')
 const remoteScores = ref<LeaderEntry[]>([])
 const isOnline = ref(false)
 const scoreSubmitted = ref(false)
+const scorePending = ref(false)
+const nameTaken = ref(false)
 watch(playerName, name => localStorage.setItem('frog-player-name', name.trim() || 'Player'))
+watch(playerEmail, email => localStorage.setItem('frog-player-email', email))
 const score = ref(0)
 const lives = ref(3)
 const gameOver = ref(false)
@@ -198,17 +209,25 @@ async function fetchScores() {
 async function submitScore() {
   if (score.value <= 0) return
   const name = playerName.value.trim() || 'Player'
+  const email = playerEmail.value.trim()
+  if (!email || !email.includes('@')) return
   try {
     const res = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score: score.value, flies: fliesCollected.value, time: elapsedMs.value }),
+      body: JSON.stringify({ name, email, score: score.value, flies: fliesCollected.value, time: elapsedMs.value }),
     })
+    if (res.status === 403) { nameTaken.value = true; return }
     if (!res.ok) throw new Error()
-    const updated: LeaderEntry[] = await res.json()
-    remoteScores.value = updated
-    isOnline.value = true
-    scoreSubmitted.value = true
+    const data = await res.json()
+    if (data.status === 'pending') {
+      scorePending.value = true
+      scoreSubmitted.value = true
+    } else if (data.status === 'updated') {
+      remoteScores.value = data.scores
+      isOnline.value = true
+      scoreSubmitted.value = true
+    }
   } catch {
     isOnline.value = false
   }
@@ -322,7 +341,7 @@ function resetEntities(full: boolean) {
 }
 
 function resetGame() {
-  score.value = 0; elapsedMs.value = 0; scoreSubmitted.value = false
+  score.value = 0; elapsedMs.value = 0; scoreSubmitted.value = false; scorePending.value = false; nameTaken.value = false
   lives.value = difficulty.value === 'easy' ? 5 : difficulty.value === 'hard' ? 2 : 3
   won.value = false; paused.value = false; gameOver.value = false
   currentLevel.value = 1; particles = []; screenShake = 0
@@ -545,6 +564,25 @@ canvas { width: 100%; height: auto; display: block; border-radius: 22px; backgro
 .controls-help {
   display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
   color: #cbd5e1; font-size: 0.95rem; padding: 10px 8px 2px;
+}
+
+.score-status {
+  margin: 10px 8px 0;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+.score-status.pending {
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #86efac;
+}
+.score-status.taken {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
 }
 
 @media (max-width: 720px) {

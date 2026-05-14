@@ -6,7 +6,7 @@
       <p>10 levels of platforming mayhem — stomp Smurfs, collect flies, survive the bosses</p>
 
       <div class="name-row">
-        <label class="name-label" for="start-name">Your name</label>
+        <label class="name-label" for="start-name">Name</label>
         <input
           id="start-name"
           class="name-input"
@@ -16,6 +16,19 @@
           placeholder="Player"
           spellcheck="false"
           autocomplete="off"
+        />
+      </div>
+      <div class="name-row">
+        <label class="name-label" for="start-email">Email</label>
+        <input
+          id="start-email"
+          class="name-input email-input"
+          :value="playerEmail"
+          @input="$emit('update:playerEmail', ($event.target as HTMLInputElement).value)"
+          type="email"
+          placeholder="for leaderboard"
+          spellcheck="false"
+          autocomplete="email"
         />
       </div>
 
@@ -43,8 +56,8 @@
 import { ref } from 'vue'
 
 type Difficulty = 'easy' | 'normal' | 'hard'
-defineProps<{ playerName: string }>()
-defineEmits<{ start: [difficulty: Difficulty]; 'update:playerName': [value: string] }>()
+defineProps<{ playerName: string; playerEmail: string }>()
+defineEmits<{ start: [difficulty: Difficulty]; 'update:playerName': [value: string]; 'update:playerEmail': [value: string] }>()
 
 const difficulty = ref<Difficulty>('normal')
 const difficulties: { value: Difficulty; label: string }[] = [
@@ -79,6 +92,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   border-radius: 10px; color: #f1f5f9; font-size: 0.95rem; font-weight: 600;
   padding: 8px 14px; width: 160px; text-align: center; outline: none;
 }
+.email-input { width: 200px; font-weight: 400; font-size: 0.88rem; }
 .name-input::placeholder { color: rgba(148,163,184,0.4); }
 .name-input:focus { border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 2px rgba(74,222,128,0.15); }
 

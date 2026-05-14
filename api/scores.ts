@@ -113,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const gameUrl = process.env.GAME_URL ?? `${proto}://${host}`
       const verifyUrl = `${gameUrl}/api/verify?token=${token}`
 
-      const resendKey = process.env.RESEND_API_KEY
+      const resendKey = process.env.RESEND_API_KEY ?? process.env.RESEND_KEY
       if (resendKey) {
         try {
           const resend = new Resend(resendKey)

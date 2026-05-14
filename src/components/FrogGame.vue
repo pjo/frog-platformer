@@ -379,7 +379,7 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
 let clearInputFrames = 0
-function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); clearInputFrames = 10; difficulty.value = d; gameStarted.value = true; resetGame() }
+function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.blockCurrentKeys(); clearInputFrames = 3; difficulty.value = d; gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }

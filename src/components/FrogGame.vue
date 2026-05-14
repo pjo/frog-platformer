@@ -164,7 +164,10 @@ const BASE_SCORES: LeaderEntry[] = [
 ]
 
 const leaderboard = computed<LeaderEntry[]>(() => {
-  const base = isOnline.value ? remoteScores.value : [...BASE_SCORES, ...loadSavedScores()]
+  const local = loadSavedScores()
+  const base = isOnline.value
+    ? [...remoteScores.value, ...local].sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
+    : [...BASE_SCORES, ...local].sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
   if (score.value <= 0 || scoreSubmitted.value) {
     return base.slice(0, 8)
   }

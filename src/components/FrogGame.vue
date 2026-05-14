@@ -35,7 +35,7 @@
 
       <StartScreen v-if="!gameStarted" :playerName="playerName" @update:playerName="playerName = $event" @start="startGame" />
 
-      <div class="mobile-controls">
+      <div v-if="gameStarted" class="mobile-controls">
         <div class="mobile-left">
           <button
             class="mobile-btn"
@@ -359,8 +359,8 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
-let clearInputNextFrame = false
-function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); clearInputNextFrame = true; difficulty.value = d; gameStarted.value = true; resetGame() }
+let clearInputFrames = 0
+function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); clearInputFrames = 10; difficulty.value = d; gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
@@ -397,7 +397,7 @@ function mobileKey(code: string, down: boolean) {
 
 function update(dt: number) {
   if (!gameStarted.value || paused.value || gameOver.value || won.value || !engine) return
-  if (clearInputNextFrame) { engine.input.clear(); clearInputNextFrame = false; return }
+  if (clearInputFrames > 0) { engine.input.clear(); clearInputFrames-- }
   elapsedMs.value += dt
 
   Physics.update(stateBridge, engine.input, dt, {

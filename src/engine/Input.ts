@@ -32,6 +32,8 @@ export class InputManager {
     window.removeEventListener('keyup', this.onKeyUp)
   }
 
+  clear() { this.keys.clear() }
+
   get left() { return this.keys.has('ArrowLeft') || this.keys.has('KeyA') }
   get right() { return this.keys.has('ArrowRight') || this.keys.has('KeyD') }
   get jump() { return this.keys.has('Space') || this.keys.has('ArrowUp') || this.keys.has('KeyW') }

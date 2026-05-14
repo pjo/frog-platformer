@@ -359,7 +359,7 @@ function burst(x: number, y: number, color: string, count: number, speed: number
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────────
-function startGame(d: 'easy' | 'normal' | 'hard') { difficulty.value = d; gameStarted.value = true; resetGame() }
+function startGame(d: 'easy' | 'normal' | 'hard') { engine?.input.clear(); difficulty.value = d; gameStarted.value = true; resetGame() }
 function togglePause() { if (!gameOver.value && !won.value) paused.value = !paused.value }
 function toggleMute()  { muted.value = !muted.value }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }

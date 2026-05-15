@@ -42,6 +42,12 @@
         ⚠ This name is registered to a different email. Use a different name next time.
       </div>
 
+      <div v-if="gameStarted" class="debug-input">
+        <span :class="{ active: dbgLeft }">←</span>
+        <span :class="{ active: dbgRight }">→</span>
+        <span :class="{ active: dbgJump }">↑</span>
+      </div>
+
       <div v-if="gameStarted" class="mobile-controls">
         <div class="mobile-left">
           <button
@@ -148,6 +154,9 @@ const reduceMotion = ref(window.matchMedia?.('(prefers-reduced-motion: reduce)')
 const uiScale = ref(1)
 
 const totalFlies = computed(() => LEVELS[currentLevel.value - 1].flies.length)
+const dbgLeft  = ref(false)
+const dbgRight = ref(false)
+const dbgJump  = ref(false)
 
 // Apply uiScale to HUD
 watch(uiScale, s => document.documentElement.style.setProperty('--ui-scale', String(s)), { immediate: true })
@@ -418,6 +427,9 @@ function mobileKey(code: string, down: boolean) {
 function update(dt: number) {
   if (!gameStarted.value || paused.value || gameOver.value || won.value || !engine) return
   if (clearInputFrames > 0) { engine.input.clear(); clearInputFrames-- }
+  dbgLeft.value  = engine.input.left
+  dbgRight.value = engine.input.right
+  dbgJump.value  = engine.input.jump
   elapsedMs.value += dt
 
   Physics.update(stateBridge, engine.input, dt, {
@@ -566,6 +578,17 @@ canvas { width: 100%; height: auto; display: block; border-radius: 22px; backgro
   display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
   color: #cbd5e1; font-size: 0.95rem; padding: 10px 8px 2px;
 }
+
+.debug-input {
+  position: absolute; top: 8px; right: 12px; display: flex; gap: 6px;
+  font-size: 1rem; font-weight: 700; pointer-events: none; z-index: 20;
+}
+.debug-input span {
+  padding: 2px 7px; border-radius: 6px;
+  background: rgba(0,0,0,0.45); color: #475569;
+  transition: background 0.05s, color 0.05s;
+}
+.debug-input span.active { background: rgba(239,68,68,0.8); color: #fff; }
 
 .score-status {
   margin: 10px 8px 0;

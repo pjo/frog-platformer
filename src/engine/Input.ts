@@ -31,14 +31,18 @@ export class InputManager {
     this.blocked.delete(e.code) // unblock once the key is physically released
   }
 
+  onBlur = () => { this.keys.clear(); this.blocked.clear() }
+
   mount() {
     window.addEventListener('keydown', this.onKeyDown, { passive: false })
     window.addEventListener('keyup', this.onKeyUp)
+    window.addEventListener('blur', this.onBlur)
   }
 
   unmount() {
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
+    window.removeEventListener('blur', this.onBlur)
   }
 
   clear() { this.keys.clear(); this.blocked.clear() }

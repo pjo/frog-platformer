@@ -1,25 +1,25 @@
 export class InputManager {
-  private keys = new Set<string>()
-  private blocked = new Set<string>()
+  private keys = new Set<string>()    // active game keys (not from INPUT fields)
+  private held = new Set<string>()    // ALL physically held keys, including inside INPUT fields
+  private blocked = new Set<string>() // keys to ignore until physically released
 
-  // Called when touch/mouse controls are used on-screen
   setKey(key: string, down: boolean) {
     down ? this.keys.add(key) : this.keys.delete(key)
   }
 
-  // Snapshot currently held keys as blocked; they are ignored until released.
-  // Call this when the game starts so keys held during the start screen
-  // (e.g. held while typing name/email) don't immediately move the frog.
+  // Snapshot ALL currently held physical keys as blocked.
+  // This catches keys held inside <input> fields that never entered `keys`.
   blockCurrentKeys() {
-    this.blocked = new Set(this.keys)
+    this.blocked = new Set([...this.held, ...this.keys])
   }
 
-  // Handle physical keyboard
   onKeyDown = (e: KeyboardEvent) => {
+    const codes = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'KeyS']
+    if (codes.includes(e.code)) this.held.add(e.code) // track physical state regardless of target
+
     const target = e.target as HTMLElement
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
 
-    const codes = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'KeyS']
     if (codes.includes(e.code)) {
       if (e.code === 'Space') e.preventDefault()
       this.keys.add(e.code)
@@ -27,11 +27,12 @@ export class InputManager {
   }
 
   onKeyUp = (e: KeyboardEvent) => {
+    this.held.delete(e.code)
     this.keys.delete(e.code)
-    this.blocked.delete(e.code) // unblock once the key is physically released
+    this.blocked.delete(e.code)
   }
 
-  onBlur = () => { this.keys.clear(); this.blocked.clear() }
+  onBlur = () => { this.keys.clear(); this.held.clear(); this.blocked.clear() }
 
   mount() {
     window.addEventListener('keydown', this.onKeyDown, { passive: false })
@@ -45,7 +46,7 @@ export class InputManager {
     window.removeEventListener('blur', this.onBlur)
   }
 
-  clear() { this.keys.clear(); this.blocked.clear() }
+  clear() { this.keys.clear(); this.held.clear(); this.blocked.clear() }
 
   get left()  { return (this.keys.has('ArrowLeft')  && !this.blocked.has('ArrowLeft'))  || (this.keys.has('KeyA') && !this.blocked.has('KeyA')) }
   get right() { return (this.keys.has('ArrowRight') && !this.blocked.has('ArrowRight')) || (this.keys.has('KeyD') && !this.blocked.has('KeyD')) }

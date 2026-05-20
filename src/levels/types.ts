@@ -8,7 +8,7 @@ export interface Platform extends Rect {
 }
 
 export interface Enemy extends Rect {
-  vx: number; minX: number; maxX: number
+  vx: number; patrolVx: number; minX: number; maxX: number
   alive: boolean; dying: boolean; deathTimer: number
   bob: number; hue: number; mood: string
   hp: number; maxHp: number; isBoss: boolean

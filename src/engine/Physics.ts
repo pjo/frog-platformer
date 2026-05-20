@@ -128,15 +128,30 @@ export class Physics {
     }
   }
 
+  private static readonly CHASE_RANGE = 260
+  private static readonly CHASE_MULT  = 1.6
+
   private static updateEnemies(state: GameState, dts: number, events: PhysicsEvents) {
     for (const e of state.enemies) {
       if (e.dying) { e.deathTimer = Math.max(0, e.deathTimer - dts); continue }
       if (!e.alive) continue
 
-      e.x += e.vx * dts; e.bob += 0.04 * dts
-      e.mood = Math.abs(state.player.x - e.x) < 160 ? 'alert' : 'walk'
-      if (e.x <= e.minX || e.x + e.w >= e.maxX) e.vx *= -1
-      if (e.isBoss && Math.abs(state.player.x - e.x) < 320) e.vx = Math.sign(e.vx) * 3.8
+      const dx = state.player.x - e.x
+      const chasing = !e.isBoss && Math.abs(dx) < Physics.CHASE_RANGE
+
+      if (chasing) {
+        e.vx = Math.sign(dx) * Math.abs(e.patrolVx) * Physics.CHASE_MULT
+        e.mood = 'alert'
+      } else {
+        if (e.x <= e.minX || e.x + e.w >= e.maxX) e.vx *= -1
+        e.mood = Math.abs(dx) < 160 ? 'alert' : 'walk'
+      }
+
+      if (e.isBoss && Math.abs(dx) < 320) e.vx = Math.sign(e.vx) * 3.8
+
+      e.x += e.vx * dts
+      e.x = Math.max(e.minX, Math.min(e.x, e.maxX - e.w))
+      e.bob += 0.04 * dts
 
       if (!intersects(state.player, e)) continue
 

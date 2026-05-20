@@ -310,7 +310,7 @@ function loadLevel(n: number) {
   const hpMult   = difficulty.value === 'easy' ? 0.5  : difficulty.value === 'hard' ? 1.5 : 1.0
   enemies    = def.enemies.map(e => ({
     x: e.x, y: e.y, w: e.w, h: e.h,
-    vx: e.vx * speedMult, minX: e.minX, maxX: e.maxX,
+    vx: e.vx * speedMult, patrolVx: e.vx * speedMult, minX: e.minX, maxX: e.maxX,
     alive: true, dying: false, deathTimer: 0,
     bob: e.bob, hue: e.hue, mood: 'walk',
     hp:    Math.max(1, Math.round((e.hp ?? 1) * hpMult)),

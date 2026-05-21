@@ -106,6 +106,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   transition: all 0.12s;
 }
 .diff-btn:hover { color: #f1f5f9; background: rgba(255,255,255,0.12); }
+.diff-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .diff-btn.easy.active  { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.12); }
 .diff-btn.normal.active{ border-color: #eab308; color: #eab308; background: rgba(234,179,8,0.12); }
 .diff-btn.hard.active  { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.12); }
@@ -117,6 +118,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   transition: transform 0.12s, box-shadow 0.12s;
 }
 .start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(34,197,94,0.45); }
+.start-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .start-keys {
   margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
   color: #64748b; font-size: 0.82rem;

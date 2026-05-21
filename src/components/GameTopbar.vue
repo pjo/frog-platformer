@@ -242,6 +242,10 @@ defineEmits<{
 .icon-btn:active {
   transform: translateY(0);
 }
+.icon-btn:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 .icon-btn svg {
   display: block;
 }

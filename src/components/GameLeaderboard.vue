@@ -363,6 +363,10 @@ function formatTime(ms: number): string {
   background: rgba(255,255,255,0.1);
   color: #e2e8f0;
 }
+.scale-btn:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 .scale-btn.active {
   background: rgba(34,197,94,0.2);
   color: #4ade80;

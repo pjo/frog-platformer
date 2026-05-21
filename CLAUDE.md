@@ -78,16 +78,24 @@ The repo root is also the Vite + Vue 3 project:
 ```
 frog-game/              ← repo root = project root
 ├── api/                ← Vercel serverless functions (leaderboard)
+│   ├── scores.ts       ← GET/POST leaderboard scores, email verification flow
+│   └── verify.ts       ← GET handler for email verification links
 ├── src/
 │   ├── main.ts
 │   ├── App.vue          ← renders <FrogGame /> only
-│   ├── style.css
+│   ├── style.css        ← minimal global reset + color-scheme: dark
 │   ├── components/
-│   │   ├── FrogGame.vue        ← orchestrator (~500 lines): game loop, physics, state
-│   │   ├── GameTopbar.vue      ← header: title, buttons, name input
+│   │   ├── FrogGame.vue        ← Vue orchestrator: owns reactive UI refs, wires Engine to DOM
+│   │   ├── GameTopbar.vue      ← header: brand, level badge, name input, action buttons
 │   │   ├── GameHud.vue         ← score/lives/flies/time/power stat cards
-│   │   ├── GameLeaderboard.vue ← scoreboard + game notes panels
-│   │   └── StartScreen.vue     ← pre-game start overlay + difficulty selection
+│   │   ├── GameLeaderboard.vue ← scoreboard + game notes + accessibility panels
+│   │   └── StartScreen.vue     ← pre-game overlay: name/email input, difficulty, start button
+│   ├── engine/
+│   │   ├── Engine.ts     ← rAF game loop, canvas context, InputManager wiring
+│   │   ├── GameState.ts  ← all mutable game-world state (player, enemies, platforms, etc.)
+│   │   ├── Input.ts      ← keyboard input: keys/held/blocked sets, blockCurrentKeys()
+│   │   ├── Physics.ts    ← static Physics class: movement, collision, enemies, scoring events
+│   │   └── Renderer.ts   ← all canvas draw calls; receives GameState + UIState
 │   ├── levels/
 │   │   ├── types.ts    ← all shared interfaces (LevelDef, Platform, Enemy, etc.)
 │   │   ├── themes.ts   ← per-theme parallax/ground renderers + THEMES map
@@ -97,7 +105,8 @@ frog-game/              ← repo root = project root
 │   │   ├── useAudio.ts       ← Web Audio synthesis, sfx, bg music
 │   │   └── useSpriteSheet.ts ← sprite sheet builder, blit, aframe
 │   └── utils/
-│       └── physics.ts  ← intersects(), circleHitsRect()
+│       ├── constants.ts  ← ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS, COLORS
+│       └── physics.ts    ← intersects(), circleHitsRect()
 ├── public/
 │   ├── favicon.svg
 │   ├── icons.svg
@@ -105,6 +114,16 @@ frog-game/              ← repo root = project root
 └── scripts/
     └── gen-sprites.mjs ← source of truth for all sprite art
 ```
+
+## Coding style
+
+### Vue
+- Use Vue's [recommended style guide](https://vuejs.org/guide/style-guide/)
+
+### TypeScript
+- Strict mode is on. No `any`. Prefer `interface` over `type` for object shapes.
+- Use `readonly` on arrays/objects that shouldn't be mutated after creation.
+- Prefer explicit return types on public functions in engine files.
 
 ## Commands
 

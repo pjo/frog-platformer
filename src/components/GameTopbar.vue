@@ -219,8 +219,8 @@ defineEmits<{
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   border: 1px solid rgba(148,163,184,0.15);
   background: rgba(255,255,255,0.06);

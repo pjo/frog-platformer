@@ -90,7 +90,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
 .name-input {
   background: rgba(255,255,255,0.07); border: 1px solid rgba(148,163,184,0.2);
   border-radius: 10px; color: #f1f5f9; font-size: 0.95rem; font-weight: 600;
-  padding: 8px 14px; width: 160px; text-align: center; outline: none;
+  padding: 11px 14px; width: 160px; text-align: center; outline: none;
 }
 .email-input { width: 200px; font-weight: 400; font-size: 0.88rem; }
 .name-input::placeholder { color: rgba(148,163,184,0.4); }
@@ -100,7 +100,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
 }
 .diff-btn {
-  font-size: 0.9rem; padding: 8px 22px; border-radius: 999px; font-weight: 700;
+  font-size: 0.9rem; padding: 11px 22px; border-radius: 999px; font-weight: 700;
   background: rgba(255,255,255,0.07); color: #94a3b8;
   border: 2px solid transparent; cursor: pointer;
   transition: all 0.12s;

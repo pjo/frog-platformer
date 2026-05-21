@@ -341,8 +341,8 @@ function formatTime(ms: number): string {
   flex-shrink: 0;
 }
 .scale-btn {
-  width: 30px;
-  height: 28px;
+  width: 40px;
+  height: 36px;
   border-radius: 8px;
   border: 1px solid rgba(148,163,184,0.15);
   background: rgba(255,255,255,0.05);

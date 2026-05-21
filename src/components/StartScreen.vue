@@ -103,7 +103,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   font-size: 0.9rem; padding: 11px 22px; border-radius: 999px; font-weight: 700;
   background: rgba(255,255,255,0.07); color: #94a3b8;
   border: 2px solid transparent; cursor: pointer;
-  transition: all 0.12s;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
 .diff-btn:hover { color: #f1f5f9; background: rgba(255,255,255,0.12); }
 .diff-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }

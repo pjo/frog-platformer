@@ -34,7 +34,7 @@
         <ellipse cx="30" cy="33" rx="4" ry="2.2" fill="#16a34a"/>
       </svg>
       <div class="title-group">
-        <h1>Frog<span class="vs"> vs. </span>Smurf Invaders</h1>
+        <div class="brand-title">Frog<span class="vs"> vs. </span>Smurf Invaders</div>
       </div>
     </div>
 
@@ -126,7 +126,7 @@ defineEmits<{
   filter: drop-shadow(0 2px 6px rgba(34,197,94,0.35));
 }
 
-.title-group h1 {
+.brand-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 800;
@@ -262,7 +262,7 @@ defineEmits<{
 
 @media (max-width: 600px) {
   .topbar { padding: 10px 14px; gap: 10px; }
-  .title-group h1 { font-size: 1.05rem; }
+  .brand-title { font-size: 1.05rem; }
   .logo { width: 34px; height: 34px; }
   .name-input { width: 80px; }
 }

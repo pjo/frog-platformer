@@ -2,7 +2,7 @@
   <div class="start-overlay">
     <div class="start-card">
       <div class="start-frog">🐸</div>
-      <h2>Frog vs. Smurf Invaders</h2>
+      <h1>Frog vs. Smurf Invaders</h1>
       <p>10 levels of platforming mayhem — stomp Smurfs, collect flies, survive the bosses</p>
 
       <div class="name-row">
@@ -78,7 +78,7 @@ const difficulties: { value: Difficulty; label: string }[] = [
   border-radius: 28px; box-shadow: 0 32px 80px rgba(0,0,0,0.5);
 }
 .start-frog { font-size: 4rem; line-height: 1; margin-bottom: 12px; }
-.start-card h2 { margin: 0 0 10px; font-size: 1.9rem; color: #f1f5f9; }
+.start-card h1 { margin: 0 0 10px; font-size: 1.9rem; font-weight: 800; color: #f1f5f9; }
 .start-card p  { margin: 0 0 22px; color: #94a3b8; line-height: 1.5; }
 
 .name-row {

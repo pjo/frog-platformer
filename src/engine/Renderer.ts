@@ -4,6 +4,7 @@ import { THEMES } from '../levels/themes'
 import { blit, aframe, SPRITE } from '../composables/useSpriteSheet'
 import { COLORS, ENGINE, DRAW_CFG } from '../utils/constants'
 import type { Enemy } from '../levels/types'
+import { PHASE_AGGRESSIVE, PHASE_BERSERK, SHOOTER_RANGE } from '../levels/types'
 
 export interface UIState {
   won: boolean
@@ -144,6 +145,13 @@ export class Renderer {
 
   private drawHazards(state: GameState) {
     for (const h of state.hazards) {
+      if (h.type === 'projectile') {
+        this.ctx.fillStyle = '#ef4444'
+        this.ctx.shadowColor = '#ef4444'; this.ctx.shadowBlur = 6
+        this.ctx.fillRect(h.x, h.y, h.w, h.h)
+        this.ctx.shadowBlur = 0
+        continue
+      }
       const g = this.ctx.createLinearGradient(h.x, h.y, h.x, h.y+h.h)
       g.addColorStop(0, COLORS.HAZARD_GRAD_START); g.addColorStop(1, COLORS.HAZARD_GRAD_END); this.ctx.fillStyle = g
       this.rr(h.x, h.y, h.w, h.h, 14)
@@ -155,6 +163,7 @@ export class Renderer {
   }
 
   private drawEnemies(state: GameState) {
+    const playerX = state.player.x
     for (const e of state.enemies) {
       if (e.dying) {
         if (e.deathTimer <= 0) continue
@@ -172,15 +181,53 @@ export class Renderer {
       if (!e.alive) continue
       const yb = Math.sin(performance.now()*0.01 + e.bob)*1.6
       if (e.isBoss) { this.drawBoss(e, yb); continue }
+
+      // Hue shift and type indicators for non-boss enemies
+      this.ctx.save()
+      if (e.type === 'jumper') {
+        this.ctx.filter = `hue-rotate(40deg)`
+        // Jump-ready chevron above enemy
+        if (e.onGround && e.jumpCooldown === 0) {
+          this.ctx.fillStyle = '#fde68a'
+          this.ctx.font = 'bold 14px sans-serif'; this.ctx.textAlign = 'center'
+          this.ctx.fillText('▲', e.x + e.w/2, e.y - 6)
+        }
+      } else if (e.type === 'shooter') {
+        this.ctx.filter = `hue-rotate(120deg)`
+        // Red dot when player is in range
+        if (Math.abs(playerX - e.x) < SHOOTER_RANGE) {
+          this.ctx.fillStyle = '#ef4444'
+          this.ctx.beginPath(); this.ctx.arc(e.x + e.w/2, e.y - 8, 4, 0, Math.PI*2); this.ctx.fill()
+        }
+      } else if (e.type === 'shield') {
+        // Shield arc in front of enemy when shield is up
+        if (e.shieldUp) {
+          const facing = Math.sign(e.vx) || 1
+          this.ctx.strokeStyle = 'rgba(100,180,255,0.7)'; this.ctx.lineWidth = 4
+          this.ctx.beginPath()
+          this.ctx.arc(e.x + e.w/2, e.y + e.h/2, e.w * 0.7,
+            facing > 0 ? -Math.PI/3 : Math.PI - Math.PI/3,
+            facing > 0 ?  Math.PI/3 : Math.PI + Math.PI/3)
+          this.ctx.stroke()
+        }
+      }
       const row = e.mood==='alert' ? SPRITE.rows.smurfAlert : SPRITE.rows.smurfWalk
       const fr  = e.mood==='alert' ? aframe(7) : aframe(10)
       blit(this.ctx, this.spriteSheet!, row, fr, e.x+DRAW_CFG.ENEMY_OFFSET_X, e.y+DRAW_CFG.ENEMY_OFFSET_Y+yb, DRAW_CFG.ENEMY_DRAW_W, DRAW_CFG.ENEMY_DRAW_H, e.vx > 0)
+      this.ctx.restore()
     }
   }
 
   private drawBoss(e: Enemy, yb: number) {
+    const phase = e.hp / e.maxHp
     const pulse = 1 + Math.sin(performance.now()*0.005)*0.04
     this.ctx.save()
+    // Phase 3: white flash overlay every ~333ms
+    if (phase <= PHASE_BERSERK && Math.floor(Date.now() / 333) % 2 === 0) {
+      this.ctx.filter = 'brightness(3) saturate(0)'
+    } else if (phase <= PHASE_AGGRESSIVE) {
+      this.ctx.filter = 'hue-rotate(30deg)'
+    }
     this.ctx.translate(e.x + e.w/2, e.y + e.h/2 + yb)
     this.ctx.scale(e.vx > 0 ? -pulse : pulse, pulse)
     this.ctx.fillStyle = COLORS.BOSS_BODY; this.rr(-44, -34, 88, 68, 14)

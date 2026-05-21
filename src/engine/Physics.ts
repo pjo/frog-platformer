@@ -1,6 +1,7 @@
 import type { GameState } from './GameState'
 import { intersects, circleHitsRect } from '../utils/physics'
 import { ENGINE, PLAYER_CFG, TIMERS, SCORING, POWERS, COLORS } from '../utils/constants'
+import { PHASE_AGGRESSIVE, PHASE_BERSERK, SHOOTER_RANGE } from '../levels/types'
 import type { InputManager } from './Input'
 
 export interface PhysicsEvents {
@@ -147,7 +148,53 @@ export class Physics {
         e.mood = Math.abs(dx) < 160 ? 'alert' : 'walk'
       }
 
-      if (e.isBoss && Math.abs(dx) < 320) e.vx = Math.sign(e.vx) * 3.8
+      // Boss phase behavior
+      if (e.isBoss) {
+        const phase = e.hp / e.maxHp
+        if (phase <= PHASE_BERSERK) {
+          e.vx = Math.sign(e.vx) * Math.abs(e.patrolVx) * 2.8
+          if (e.onGround && Math.abs(dx) < 320) { e.vy = -11; e.onGround = false }
+        } else if (phase <= PHASE_AGGRESSIVE) {
+          e.vx = Math.sign(e.vx) * Math.abs(e.patrolVx) * 1.8
+        }
+      }
+
+      // Jumper: hop toward player when grounded and in range
+      if (e.type === 'jumper') {
+        e.jumpCooldown = Math.max(0, e.jumpCooldown - 1)
+        if (e.onGround && e.jumpCooldown === 0 && Math.abs(dx) < Physics.CHASE_RANGE) {
+          e.vy = -10; e.jumpCooldown = 80
+        }
+      }
+
+      // Vertical physics for jumpers and bosses; Y-clamp for everything else
+      if (e.type === 'jumper' || e.isBoss) {
+        e.vy = Math.min(ENGINE.MAX_FALL_SPEED, e.vy + ENGINE.GRAVITY * dts)
+        e.y += e.vy * dts
+        e.onGround = false
+        for (const p of state.platforms) {
+          if (!intersects(e, p)) continue
+          if (e.vy > 0) { e.y = p.y - e.h; e.vy = 0; e.onGround = true }
+          else { e.y = p.y + p.h; e.vy = 0 }
+        }
+      } else {
+        e.y = e.spawnY; e.vy = 0; e.onGround = true
+      }
+
+      // Shooter: fire projectile when player in range
+      if (e.type === 'shooter') {
+        e.shootCooldown = Math.max(0, e.shootCooldown - 1)
+        if (e.shootCooldown === 0 && Math.abs(dx) < SHOOTER_RANGE) {
+          state.hazards.push({ x: e.x + e.w/2, y: e.y + e.h/2 - 6, w: 10, h: 6, type: 'projectile', vx: Math.sign(dx) * 5, active: true })
+          e.shootCooldown = 120
+        }
+      }
+
+      // Shield: raise shield after cooldown expires
+      if (e.type === 'shield' && e.shieldCooldown > 0) {
+        e.shieldCooldown = Math.max(0, e.shieldCooldown - 1)
+        if (e.shieldCooldown === 0) e.shieldUp = true
+      }
 
       e.x += e.vx * dts
       e.x = Math.max(e.minX, Math.min(e.x, e.maxX - e.w))
@@ -156,27 +203,59 @@ export class Physics {
       if (!intersects(state.player, e)) continue
 
       const stomped = state.player.vy > 1 && (state.player.y + state.player.h - e.y) < (e.isBoss ? 32 : 22)
-      if (stomped || state.player.starTimer > 0) {
-        e.hp--
-        const killed = e.hp <= 0
-        if (killed) {
-          e.alive = false; e.dying = true; e.deathTimer = TIMERS.DEATH_ANIMATION
-          events.burst(e.x + e.w/2, e.y + e.h/2, e.isBoss ? COLORS.PARTICLE_BOSS_DEATH : COLORS.PARTICLE_ENEMY_DEATH, e.isBoss ? 26 : 10, e.isBoss ? 9 : 4)
-          events.onScore(e.isBoss ? SCORING.BOSS_KILL : SCORING.ENEMY_KILL)
+      const starActive = state.player.starTimer > 0
+
+      if (stomped || starActive) {
+        if (e.type === 'shield' && e.shieldUp && !starActive) {
+          // Stomping a shielded enemy bounces the player back and costs a life
+          events.onLifeLost()
         } else {
-          events.burst(e.x + e.w/2, e.y, COLORS.PARTICLE_ENEMY_HIT, 8, 4)
-          events.onScore(100)
+          e.hp--
+          const killed = e.hp <= 0
+          if (killed) {
+            e.alive = false; e.dying = true; e.deathTimer = TIMERS.DEATH_ANIMATION
+            events.burst(e.x + e.w/2, e.y + e.h/2, e.isBoss ? COLORS.PARTICLE_BOSS_DEATH : COLORS.PARTICLE_ENEMY_DEATH, e.isBoss ? 26 : 10, e.isBoss ? 9 : 4)
+            events.onScore(e.isBoss ? SCORING.BOSS_KILL : SCORING.ENEMY_KILL)
+          } else {
+            events.burst(e.x + e.w/2, e.y, COLORS.PARTICLE_ENEMY_HIT, 8, 4)
+            events.onScore(100)
+          }
+          state.player.vy = e.isBoss ? PLAYER_CFG.BOUNCE_BOSS : PLAYER_CFG.BOUNCE_NORMAL
+          state.player.squish = PLAYER_CFG.SQUISH_STOMP_VAL
+          events.sfx('stomp'); state.screenShake = e.isBoss ? 9 : 4
         }
-        state.player.vy = e.isBoss ? PLAYER_CFG.BOUNCE_BOSS : PLAYER_CFG.BOUNCE_NORMAL; state.player.squish = PLAYER_CFG.SQUISH_STOMP_VAL
-        events.sfx('stomp'); state.screenShake = e.isBoss ? 9 : 4
-      } else if (state.player.starTimer === 0) {
-        events.onLifeLost()
+      } else if (starActive === false) {
+        if (e.type === 'shield' && e.shieldUp) {
+          // Side-bumping a shielded enemy knocks the shield down
+          e.shieldUp = false; e.shieldCooldown = 90
+        } else {
+          events.onLifeLost()
+        }
       }
     }
   }
 
   private static updateHazards(state: GameState, events: PhysicsEvents) {
-    for (const h of state.hazards) { if (intersects(state.player, h)) { events.onLifeLost(); break } }
+    const player = state.player
+
+    // Pass 1: move projectiles; deactivate those that left world bounds
+    for (const h of state.hazards) {
+      if (h.type === 'projectile') {
+        h.x += h.vx ?? 0
+        if (h.x < 0 || h.x > state.world.width) h.active = false
+      }
+    }
+
+    // Pass 2: player collision — no break; loseLife() guard prevents double-damage
+    for (const h of state.hazards) {
+      if (intersects(player, h)) {
+        if (h.type === 'projectile') h.active = false
+        events.onLifeLost()
+      }
+    }
+
+    // Pass 3: remove inactive hazards — runs once after all marking
+    state.hazards = state.hazards.filter(h => h.active !== false)
   }
 
   private static updateCheckpoints(state: GameState, events: PhysicsEvents) {

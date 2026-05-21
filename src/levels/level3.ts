@@ -34,12 +34,12 @@ export const level3: LevelDef = {
     { x: 4700, y: 302, w: 120, h: 22, type: 'wood' },
   ],
   enemies: [
-    { x: 760,  y: 522, w: 44, h: 38, vx:  2.0, minX: 720,  maxX: 1150, bob: 0.0, hue:  0 },
-    { x: 1400, y: 522, w: 44, h: 38, vx: -2.2, minX: 1340, maxX: 1830, bob: 1.0, hue:  8 },
-    { x: 2120, y: 522, w: 44, h: 38, vx:  2.4, minX: 2080, maxX: 2570, bob: 0.5, hue: 16 },
-    { x: 2780, y: 522, w: 44, h: 38, vx: -2.6, minX: 2740, maxX: 3200, bob: 2.0, hue:  4 },
-    { x: 3540, y: 522, w: 44, h: 38, vx:  2.8, minX: 3500, maxX: 3930, bob: 1.5, hue: 12 },
-    { x: 4200, y: 522, w: 44, h: 38, vx: -3.0, minX: 4160, maxX: 4650, bob: 0.8, hue: 20 },
+    { x: 760,  y: 522, w: 44, h: 38, vx:  2.0, minX: 720,  maxX: 1150, bob: 0.0, hue:  0, type: 'jumper' },
+    { x: 1400, y: 522, w: 44, h: 38, vx: -2.2, minX: 1340, maxX: 1830, bob: 1.0, hue:  8, type: 'jumper' },
+    { x: 2120, y: 522, w: 44, h: 38, vx:  2.4, minX: 2080, maxX: 2570, bob: 0.5, hue: 16, type: 'jumper' },
+    { x: 2780, y: 522, w: 44, h: 38, vx: -2.6, minX: 2740, maxX: 3200, bob: 2.0, hue:  4, type: 'jumper' },
+    { x: 3540, y: 522, w: 44, h: 38, vx:  2.8, minX: 3500, maxX: 3930, bob: 1.5, hue: 12, type: 'jumper' },
+    { x: 4200, y: 522, w: 44, h: 38, vx: -3.0, minX: 4160, maxX: 4650, bob: 0.8, hue: 20, type: 'jumper' },
     { x: 5300, y: 480, w: 90, h: 80, vx:  2.0, minX: 4980, maxX: 5790, bob: 0.0, hue:  0, hp: 3, isBoss: true },
   ],
   flies: [

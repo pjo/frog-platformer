@@ -316,10 +316,18 @@ function loadLevel(n: number) {
     hp:    Math.max(1, Math.round((e.hp ?? 1) * hpMult)),
     maxHp: Math.max(1, Math.round((e.hp ?? 1) * hpMult)),
     isBoss: e.isBoss ?? false,
+    type:          e.type ?? 'basic',
+    jumpCooldown:  0,
+    shootCooldown: 0,
+    shieldUp:      e.type === 'shield',
+    shieldCooldown: 0,
+    vy:            0,
+    onGround:      false,
+    spawnY:        e.y,
   }))
   enemyInitData = enemies.map(e => ({ x: e.x, vx: e.vx, hp: e.maxHp }))
   flies      = def.flies.map(f => ({ ...f, taken: false }))
-  hazards    = def.hazards.map(h => ({ ...h }))
+  hazards    = def.hazards.map(h => ({ ...h, active: true }))
   checkpoints= def.checkpoints.map(c => ({ ...c, active: false }))
   powerUps   = def.powerUps.map(p => ({ ...p, taken: false }))
   finishGate = { ...def.finishGate }
@@ -339,6 +347,12 @@ function resetEntities(full: boolean) {
     const init = enemyInitData[i]
     e.alive = true; e.dying = false; e.deathTimer = 0; e.mood = 'walk'
     if (init) { e.x = init.x; e.vx = init.vx; e.hp = init.hp }
+    e.vy             = 0
+    e.jumpCooldown   = 0
+    e.shootCooldown  = 0
+    e.shieldUp       = e.type === 'shield'
+    e.shieldCooldown = 0
+    e.onGround       = false
   })
 
   if (full) {

@@ -113,7 +113,6 @@ frog-game/              ← repo root = project root
 │       └── physics.ts    ← intersects(), circleHitsRect()
 ├── public/
 │   ├── favicon.svg
-│   ├── icons.svg
 │   └── sprites.png     ← committed static asset, regenerate with npm run gen-sprites
 └── scripts/
     └── gen-sprites.mjs ← source of truth for all sprite art

@@ -135,6 +135,11 @@ frog-game/              ← repo root = project root
 - Avoid inline styles if possible, use classes, and if reused across components, try to share.
 - Avoid inline graphics like svg:s etc. and create separate assets instead.
 
+## Testing
+
+- Always run tests before pushing changes.
+- Make sure tests are up to date when chaning stuff and that new tests are created for new functionality.
+
 ## Commands
 
 ```bash

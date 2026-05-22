@@ -913,6 +913,10 @@ canvas {
 .stage:-webkit-full-screen .mobile-controls {
   width: 100%;
 }
+.stage:fullscreen :deep(.start-overlay),
+.stage:-webkit-full-screen :deep(.start-overlay) {
+  border-radius: 0;
+}
 .stage:fullscreen .controls-help {
   position: absolute;
   bottom: 8px;

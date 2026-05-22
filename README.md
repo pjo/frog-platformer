@@ -23,12 +23,12 @@ npm run gen-sprites  # regenerate public/sprites.png after editing scripts/gen-s
 
 ## Controls
 
-| Action | Keys |
-|--------|------|
-| Move | ← → / A D |
-| Jump | Space / W / ↑ |
-| Pause | P |
-| Mute | M |
-| Fullscreen | F |
+| Action     | Keys          |
+| ---------- | ------------- |
+| Move       | ← → / A D     |
+| Jump       | Space / W / ↑ |
+| Pause      | P             |
+| Mute       | M             |
+| Fullscreen | F             |
 
 Mobile touch controls are shown on smaller screens.

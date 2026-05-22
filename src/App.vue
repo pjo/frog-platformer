@@ -1,5 +1,5 @@
 <script setup>
-import FrogGame from './components/FrogGame.vue'
+import FrogGame from './components/FrogGame.vue';
 </script>
 
 <template>

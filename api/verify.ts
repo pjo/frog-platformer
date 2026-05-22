@@ -1,82 +1,92 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { Redis } from '@upstash/redis'
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 
 interface Score {
-  name: string
-  email: string
-  score: number
-  flies: number
-  time: number
+  name: string;
+  email: string;
+  score: number;
+  flies: number;
+  time: number;
 }
 
 interface PendingScore {
-  name: string
-  email: string
-  score: number
-  flies: number
-  time: number
-  expires: number
+  name: string;
+  email: string;
+  score: number;
+  flies: number;
+  time: number;
+  expires: number;
 }
 
-const SCORES_KEY = 'frog:scores:v1'
-const NAMES_KEY = 'frog:names:v1'
-const PENDING_PREFIX = 'frog:pending:'
-const MAX_STORED = 50
+const SCORES_KEY = 'frog:scores:v1';
+const NAMES_KEY = 'frog:names:v1';
+const PENDING_PREFIX = 'frog:pending:';
+const MAX_STORED = 50;
 
 function getRedis(): Redis | null {
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
   try {
-    return new Redis({ url, token })
+    return new Redis({ url, token });
   } catch {
-    return null
+    return null;
   }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).end()
+  if (req.method !== 'GET') return res.status(405).end();
 
-  const token = req.query.token as string
-  if (!token) return res.status(400).send(errorPage('Missing verification token.'))
+  const token = req.query.token as string;
+  if (!token) return res.status(400).send(errorPage('Missing verification token.'));
 
-  const redis = getRedis()
-  if (!redis) return res.status(503).send(errorPage('Storage not configured.'))
+  const redis = getRedis();
+  if (!redis) return res.status(503).send(errorPage('Storage not configured.'));
 
   try {
-    const pending = await redis.get<PendingScore>(`${PENDING_PREFIX}${token}`)
-    if (!pending) return res.status(400).send(errorPage('This link has expired or has already been used.'))
+    const pending = await redis.get<PendingScore>(`${PENDING_PREFIX}${token}`);
+    if (!pending)
+      return res.status(400).send(errorPage('This link has expired or has already been used.'));
     if (Date.now() > pending.expires) {
-      await redis.del(`${PENDING_PREFIX}${token}`)
-      return res.status(400).send(errorPage('This link has expired. Play again to get a new one!'))
+      await redis.del(`${PENDING_PREFIX}${token}`);
+      return res.status(400).send(errorPage('This link has expired. Play again to get a new one!'));
     }
 
-    const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? []
-    const idx = scores.findIndex(s => s.name.toLowerCase() === pending.name.toLowerCase())
-    const newEntry: Score = { name: pending.name, email: pending.email, score: pending.score, flies: pending.flies, time: pending.time }
+    const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? [];
+    const idx = scores.findIndex((s) => s.name.toLowerCase() === pending.name.toLowerCase());
+    const newEntry: Score = {
+      name: pending.name,
+      email: pending.email,
+      score: pending.score,
+      flies: pending.flies,
+      time: pending.time,
+    };
 
     if (idx >= 0) {
-      if (pending.score > scores[idx].score || (pending.score === scores[idx].score && pending.flies > scores[idx].flies))
-        scores[idx] = newEntry
+      if (
+        pending.score > scores[idx].score ||
+        (pending.score === scores[idx].score && pending.flies > scores[idx].flies)
+      )
+        scores[idx] = newEntry;
     } else {
-      scores.push(newEntry)
+      scores.push(newEntry);
     }
-    scores.sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
-    await redis.set(SCORES_KEY, scores.slice(0, MAX_STORED))
+    scores.sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time);
+    await redis.set(SCORES_KEY, scores.slice(0, MAX_STORED));
 
-    const names = (await redis.get<Record<string, string>>(NAMES_KEY)) ?? {}
-    names[pending.name.toLowerCase()] = pending.email
-    await redis.set(NAMES_KEY, names)
+    const names = (await redis.get<Record<string, string>>(NAMES_KEY)) ?? {};
+    names[pending.name.toLowerCase()] = pending.email;
+    await redis.set(NAMES_KEY, names);
 
-    await redis.del(`${PENDING_PREFIX}${token}`)
+    await redis.del(`${PENDING_PREFIX}${token}`);
 
-    const proto = req.headers['x-forwarded-proto'] ?? 'https'
-    const host = req.headers['x-forwarded-host'] ?? req.headers['host']
-    const gameUrl = process.env.GAME_URL ?? `${proto}://${host}`
+    const proto = req.headers['x-forwarded-proto'] ?? 'https';
+    const host = req.headers['x-forwarded-host'] ?? req.headers['host'];
+    const gameUrl = process.env.GAME_URL ?? `${proto}://${host}`;
 
-    return res.status(200).send(successPage(pending.name, pending.score, gameUrl as string))
+    return res.status(200).send(successPage(pending.name, pending.score, gameUrl as string));
   } catch {
-    return res.status(500).send(errorPage('Something went wrong. Please try again.'))
+    return res.status(500).send(errorPage('Something went wrong. Please try again.'));
   }
 }
 
@@ -110,7 +120,7 @@ function successPage(name: string, score: number, gameUrl: string): string {
   <a href="${gameUrl}">Play Again</a>
 </div>
 </body>
-</html>`
+</html>`;
 }
 
 function errorPage(message: string): string {
@@ -136,5 +146,5 @@ function errorPage(message: string): string {
   <p>${message}</p>
 </div>
 </body>
-</html>`
+</html>`;
 }

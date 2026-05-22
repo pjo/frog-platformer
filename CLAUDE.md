@@ -118,12 +118,19 @@ frog-game/              ← repo root = project root
 ## Coding style
 
 ### Vue
+
 - Use Vue's [recommended style guide](https://vuejs.org/guide/style-guide/)
 
 ### TypeScript
+
 - Strict mode is on. No `any`. Prefer `interface` over `type` for object shapes.
 - Use `readonly` on arrays/objects that shouldn't be mutated after creation.
 - Prefer explicit return types on public functions in engine files.
+
+### Styling
+
+- Avoid inline styles if possible, use classes, and if reused across components, try to share.
+- Avoid inline graphics like svg:s etc. and create separate assets instead.
 
 ## Commands
 
@@ -204,6 +211,7 @@ Available skills: `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/pla
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
 
 Key routing rules:
+
 - Product ideas/brainstorming → invoke /office-hours
 - Strategy/scope → invoke /plan-ceo-review
 - Architecture → invoke /plan-eng-review

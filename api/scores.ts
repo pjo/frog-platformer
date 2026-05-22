@@ -1,123 +1,145 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { Redis } from '@upstash/redis'
-import { Resend } from 'resend'
-import { randomUUID } from 'crypto'
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
+import { Resend } from 'resend';
+import { randomUUID } from 'crypto';
 
 interface Score {
-  name: string
-  email: string
-  score: number
-  flies: number
-  time: number
+  name: string;
+  email: string;
+  score: number;
+  flies: number;
+  time: number;
 }
 
 interface PendingScore {
-  name: string
-  email: string
-  score: number
-  flies: number
-  time: number
-  expires: number
+  name: string;
+  email: string;
+  score: number;
+  flies: number;
+  time: number;
+  expires: number;
 }
 
-const SCORES_KEY = 'frog:scores:v1'
-const NAMES_KEY = 'frog:names:v1'
-const PENDING_PREFIX = 'frog:pending:'
-const MAX_STORED = 50
-const TOKEN_TTL_S = 48 * 60 * 60
+const SCORES_KEY = 'frog:scores:v1';
+const NAMES_KEY = 'frog:names:v1';
+const PENDING_PREFIX = 'frog:pending:';
+const MAX_STORED = 50;
+const TOKEN_TTL_S = 48 * 60 * 60;
 
 function getRedis(): Redis | null {
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
   try {
-    return new Redis({ url, token })
+    return new Redis({ url, token });
   } catch {
-    return null
+    return null;
   }
 }
 
 function publicScores(scores: Score[]) {
-  return scores.slice(0, 10).map(s => ({ name: s.name, score: s.score, flies: s.flies, time: s.time }))
+  return scores
+    .slice(0, 10)
+    .map((s) => ({ name: s.name, score: s.score, flies: s.flies, time: s.time }));
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(204).end()
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
-  const redis = getRedis()
-  if (!redis) return res.status(503).json({ error: 'Storage not configured' })
+  const redis = getRedis();
+  if (!redis) return res.status(503).json({ error: 'Storage not configured' });
 
   if (req.method === 'GET') {
     try {
-      const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? []
-      return res.json(publicScores(scores))
+      const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? [];
+      return res.json(publicScores(scores));
     } catch {
-      return res.status(500).json({ error: 'Failed to fetch scores' })
+      return res.status(500).json({ error: 'Failed to fetch scores' });
     }
   }
 
   if (req.method === 'POST') {
-    const { name, email, score, flies, time } = (req.body ?? {}) as Partial<Score>
+    const { name, email, score, flies, time } = (req.body ?? {}) as Partial<Score>;
     if (
-      typeof name !== 'string' || !name.trim() ||
-      typeof email !== 'string' || !email.includes('@') || !email.includes('.') ||
-      typeof score !== 'number' || score < 0 || score > 999_999 ||
-      typeof flies !== 'number' || flies < 0 || flies > 54 ||
-      typeof time !== 'number' || time < 0
+      typeof name !== 'string' ||
+      !name.trim() ||
+      typeof email !== 'string' ||
+      !email.includes('@') ||
+      !email.includes('.') ||
+      typeof score !== 'number' ||
+      score < 0 ||
+      score > 999_999 ||
+      typeof flies !== 'number' ||
+      flies < 0 ||
+      flies > 54 ||
+      typeof time !== 'number' ||
+      time < 0
     ) {
-      return res.status(400).json({ error: 'Invalid payload' })
+      return res.status(400).json({ error: 'Invalid payload' });
     }
 
-    const cleanName = name.trim().slice(0, 20)
-    const cleanEmail = email.trim().toLowerCase()
+    const cleanName = name.trim().slice(0, 20);
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
-      const names = (await redis.get<Record<string, string>>(NAMES_KEY)) ?? {}
-      const ownerEmail = names[cleanName.toLowerCase()]
+      const names = (await redis.get<Record<string, string>>(NAMES_KEY)) ?? {};
+      const ownerEmail = names[cleanName.toLowerCase()];
 
       if (ownerEmail && ownerEmail !== cleanEmail) {
-        return res.status(403).json({ error: 'Name taken', message: 'This name is registered to a different email address.' })
+        return res
+          .status(403)
+          .json({
+            error: 'Name taken',
+            message: 'This name is registered to a different email address.',
+          });
       }
 
       if (ownerEmail === cleanEmail) {
         // Verified owner — update score directly if better
-        const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? []
-        const idx = scores.findIndex(s => s.name.toLowerCase() === cleanName.toLowerCase())
-        const newEntry: Score = { name: cleanName, email: cleanEmail, score, flies, time }
+        const scores = (await redis.get<Score[]>(SCORES_KEY)) ?? [];
+        const idx = scores.findIndex((s) => s.name.toLowerCase() === cleanName.toLowerCase());
+        const newEntry: Score = { name: cleanName, email: cleanEmail, score, flies, time };
         if (idx >= 0) {
-          if (score > scores[idx].score || (score === scores[idx].score && flies > scores[idx].flies))
-            scores[idx] = newEntry
+          if (
+            score > scores[idx].score ||
+            (score === scores[idx].score && flies > scores[idx].flies)
+          )
+            scores[idx] = newEntry;
         } else {
-          scores.push(newEntry)
+          scores.push(newEntry);
         }
-        scores.sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time)
-        const trimmed = scores.slice(0, MAX_STORED)
-        await redis.set(SCORES_KEY, trimmed)
-        return res.json({ status: 'updated', scores: publicScores(trimmed) })
+        scores.sort((a, b) => b.score - a.score || b.flies - a.flies || a.time - b.time);
+        const trimmed = scores.slice(0, MAX_STORED);
+        await redis.set(SCORES_KEY, trimmed);
+        return res.json({ status: 'updated', scores: publicScores(trimmed) });
       }
 
       // New name — create pending token and send verification email
-      const token = randomUUID()
+      const token = randomUUID();
       const pending: PendingScore = {
-        name: cleanName, email: cleanEmail, score, flies, time,
+        name: cleanName,
+        email: cleanEmail,
+        score,
+        flies,
+        time,
         expires: Date.now() + TOKEN_TTL_S * 1000,
-      }
-      await redis.set(`${PENDING_PREFIX}${token}`, pending, { ex: TOKEN_TTL_S })
+      };
+      await redis.set(`${PENDING_PREFIX}${token}`, pending, { ex: TOKEN_TTL_S });
 
-      const proto = req.headers['x-forwarded-proto'] ?? 'https'
-      const host = req.headers['x-forwarded-host'] ?? req.headers['host']
-      const gameUrl = process.env.GAME_URL ?? `${proto}://${host}`
-      const verifyUrl = `${gameUrl}/api/verify?token=${token}`
+      const proto = req.headers['x-forwarded-proto'] ?? 'https';
+      const host = req.headers['x-forwarded-host'] ?? req.headers['host'];
+      const gameUrl = process.env.GAME_URL ?? `${proto}://${host}`;
+      const verifyUrl = `${gameUrl}/api/verify?token=${token}`;
 
-      const resendKey = process.env.RESEND_API_KEY ?? process.env.RESEND_KEY
+      const resendKey = process.env.RESEND_API_KEY ?? process.env.RESEND_KEY;
       if (resendKey) {
         try {
-          const resend = new Resend(resendKey)
-          const from = process.env.RESEND_FROM_EMAIL ?? 'Frog Game <noreply@resend.dev>'
+          const resend = new Resend(resendKey);
+          const from = process.env.RESEND_FROM_EMAIL ?? 'Frog Game <noreply@resend.dev>';
           await resend.emails.send({
             from,
             to: cleanEmail,
@@ -135,15 +157,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 <p style="color:#475569;font-size:0.82rem">Link expires in 48 hours. If you didn't play this game, ignore this email.</p>
               </div>
             `,
-          })
-        } catch { /* email failure is non-fatal */ }
+          });
+        } catch {
+          /* email failure is non-fatal */
+        }
       }
 
-      return res.json({ status: 'pending', message: 'Check your email to publish your score!' })
+      return res.json({ status: 'pending', message: 'Check your email to publish your score!' });
     } catch {
-      return res.status(500).json({ error: 'Failed to save score' })
+      return res.status(500).json({ error: 'Failed to save score' });
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' })
+  return res.status(405).json({ error: 'Method not allowed' });
 }

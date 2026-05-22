@@ -1,12 +1,12 @@
 <script setup lang="ts">
 defineProps<{
-  score: number
-  lives: number
-  fliesCollected: number
-  totalFlies: number
-  displayTime: string
-  activePower: string
-}>()
+  score: number;
+  lives: number;
+  fliesCollected: number;
+  totalFlies: number;
+  displayTime: string;
+  activePower: string;
+}>();
 </script>
 
 <template>
@@ -36,19 +36,43 @@ defineProps<{
 
 <style scoped>
 .hud-grid {
-  max-width: 1440px; margin: 0 auto 18px;
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px;
+  max-width: 1440px;
+  margin: 0 auto 18px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
 }
-.stat { border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
-.stat .label { color: #94a3b8; font-size: calc(0.88rem * var(--ui-scale, 1)); text-transform: uppercase; letter-spacing: 0.08em; }
-.stat strong  { font-size: clamp(1.1rem, 1.5vw, calc(1.5rem * var(--ui-scale, 1))); }
-.power-active { border-color: rgba(250,204,21,0.5) !important; }
-.power-active strong { color: #fde047; }
+.stat {
+  border-radius: 22px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat .label {
+  color: #94a3b8;
+  font-size: calc(0.88rem * var(--ui-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat strong {
+  font-size: clamp(1.1rem, 1.5vw, calc(1.5rem * var(--ui-scale, 1)));
+}
+.power-active {
+  border-color: rgba(250, 204, 21, 0.5) !important;
+}
+.power-active strong {
+  color: #fde047;
+}
 
 @media (max-width: 1100px) {
-  .hud-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .hud-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 720px) {
-  .hud-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .hud-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

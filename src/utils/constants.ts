@@ -12,7 +12,7 @@ export const ENGINE = {
   MAX_DT_SCALE: 2,
   DT_NORMALIZER: 16.6667,
   GRASS_TUFT_SPACING: 96,
-}
+};
 
 export const PLAYER_CFG = {
   START_X: 160,
@@ -32,7 +32,7 @@ export const PLAYER_CFG = {
   SQUISH_STOMP_VAL: 1.3,
   BOUNCE_BOSS: -12,
   BOUNCE_NORMAL: -9.5,
-}
+};
 
 export const TIMERS = {
   LEVEL_BANNER: 90,
@@ -45,7 +45,7 @@ export const TIMERS = {
   DEATH_ANIMATION: 20,
   BURST_LIFE_BASE: 30,
   BURST_LIFE_RANDOM: 20,
-}
+};
 
 export const DRAW_CFG = {
   PLAYER_OFFSET_X: -10,
@@ -62,7 +62,7 @@ export const DRAW_CFG = {
   FLY_DRAW_H: 44,
   STAR_AURA_RADIUS: 46,
   PULSE_AURA_BASE_RADIUS: 48,
-}
+};
 
 export const SCORING = {
   FLY: 100,
@@ -73,11 +73,11 @@ export const SCORING = {
   LEVEL_CLEAR_LIFE_BONUS: 300,
   LEVEL_CLEAR_FLY_BONUS: 50,
   GAME_WIN_BONUS: 2000,
-}
+};
 
 export const POWERS = {
   SPEED_MULTIPLIER: 1.45,
-}
+};
 
 export const COLORS = {
   // Particles
@@ -89,21 +89,21 @@ export const COLORS = {
   PARTICLE_BOSS_DEATH: '#f43f5e',
   PARTICLE_ENEMY_DEATH: '#93c5fd',
   PARTICLE_ENEMY_HIT: '#f97316',
-  
+
   // Platform drawing
   PLATFORM_STONE: '#64748b',
   PLATFORM_STONE_HIGHLIGHT: 'rgba(255,255,255,0.15)',
   PLATFORM_WOOD: '#8b5e34',
   PLATFORM_WOOD_PATTERN: '#a16207',
   PLATFORM_MOVING_HIGHLIGHT: 'rgba(250,204,21,0.28)',
-  
+
   // Entities
   CHECKPOINT_POLE: '#78350f',
   CHECKPOINT_ACTIVE: '#f97316',
   CHECKPOINT_INACTIVE: '#cbd5e1',
   HAZARD_LOG: '#8b5e34',
   STAR_GLOW: 'rgba(250, 204, 21, 0.4)',
-  
+
   // UI in Canvas
   BOSS_HP_BG: '#1e293b',
   BOSS_HP_FILL: '#ef4444',
@@ -116,7 +116,7 @@ export const COLORS = {
   BOSS_HP_HIGH: '#22c55e',
   BOSS_HP_MED: '#fbbf24',
   BOSS_HP_LOW: '#ef4444',
-  
+
   // Elements
   PU_SPEED_BASE: '#22c55e',
   PU_SPEED_GLINT: '#bbf7d0',
@@ -129,4 +129,4 @@ export const COLORS = {
   GATE_UNLOCKED: '#4b5563',
   TEXT_PRIMARY: '#ffffff',
   OVERLAY_BG: 'rgba(15,23,42,0.75)',
-}
+};

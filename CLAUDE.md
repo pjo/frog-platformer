@@ -84,6 +84,10 @@ frog-game/              ← repo root = project root
 │   ├── main.ts
 │   ├── App.vue          ← renders <FrogGame /> only
 │   ├── style.css        ← minimal global reset + color-scheme: dark
+│   ├── api/
+│   │   └── scores.ts   ← typed fetch wrappers for leaderboard API (getScores, postScore)
+│   ├── assets/
+│   │   └── frog-logo.svg ← frog logo used in GameTopbar
 │   ├── components/
 │   │   ├── FrogGame.vue        ← Vue orchestrator: owns reactive UI refs, wires Engine to DOM
 │   │   ├── GameTopbar.vue      ← header: brand, level badge, name input, action buttons
@@ -139,9 +143,10 @@ npm run dev          # start dev server (Vite HMR)
 npm run build        # type-check + production build (vue-tsc && vite build)
 npm run preview      # preview production build
 npm run gen-sprites  # regenerate public/sprites.png from scripts/gen-sprites.mjs
+npm run lint         # ESLint (Vue 3 + TypeScript rules)
+npm run format       # Prettier (single quotes, semicolons, 100 char width)
+npm run test         # vitest unit tests
 ```
-
-There are no tests and no linter configured.
 
 ## Architecture
 
@@ -199,6 +204,10 @@ Manual AABB collision in `FrogGame.vue` with two-pass resolution — horizontal 
 ### World dimensions
 
 Each level defines its own `worldWidth` (5200–8200px); height is always 720px. The camera follows the player with lerp smoothing. Each level has three checkpoints; dying respawns at the last active one.
+
+## Update documentation
+
+Always keep CLAUDE.md and README.md up to date.
 
 ## gstack
 

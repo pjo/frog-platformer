@@ -138,7 +138,7 @@ frog-game/              ← repo root = project root
 ## Testing
 
 - Always run tests before pushing changes.
-- Make sure tests are up to date when chaning stuff and that new tests are created for new functionality.
+- Make sure tests are up to date when changing stuff and that new tests are created for new functionality.
 
 ## Commands
 

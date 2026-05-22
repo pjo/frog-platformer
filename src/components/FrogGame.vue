@@ -899,6 +899,8 @@ canvas {
   align-items: center;
   background: #0b1120;
   border-radius: 0;
+  border: none;
+  box-shadow: none;
   padding: 0;
   max-width: 100%;
 }

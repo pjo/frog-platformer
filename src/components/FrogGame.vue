@@ -891,7 +891,8 @@ canvas {
   background: #7dd3fc;
 }
 
-.stage:fullscreen {
+.stage:fullscreen,
+.stage:-webkit-full-screen {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -901,13 +902,15 @@ canvas {
   padding: 0;
   max-width: 100%;
 }
-.stage:fullscreen canvas {
+.stage:fullscreen canvas,
+.stage:-webkit-full-screen canvas {
   width: auto;
   height: 100vh;
   max-width: 100vw;
   border-radius: 0;
 }
-.stage:fullscreen .mobile-controls {
+.stage:fullscreen .mobile-controls,
+.stage:-webkit-full-screen .mobile-controls {
   width: 100%;
 }
 .stage:fullscreen .controls-help {

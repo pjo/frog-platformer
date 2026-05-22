@@ -1,3 +1,14 @@
+<script setup lang="ts">
+defineProps<{
+  score: number
+  lives: number
+  fliesCollected: number
+  totalFlies: number
+  displayTime: string
+  activePower: string
+}>()
+</script>
+
 <template>
   <section class="hud-grid">
     <div class="card stat">
@@ -22,17 +33,6 @@
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  score: number
-  lives: number
-  fliesCollected: number
-  totalFlies: number
-  displayTime: string
-  activePower: string
-}>()
-</script>
 
 <style scoped>
 .hud-grid {

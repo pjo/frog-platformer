@@ -1,3 +1,23 @@
+<script setup lang="ts">
+defineProps<{
+  currentLevel: number
+  levelCount: number
+  playerName: string
+  isOnline: boolean
+  paused: boolean
+  muted: boolean
+  isFullscreen: boolean
+}>()
+
+defineEmits<{
+  'update:playerName': [value: string]
+  pause: []
+  restart: []
+  mute: []
+  fullscreen: []
+}>()
+</script>
+
 <template>
   <header class="topbar card">
     <div class="brand">
@@ -79,26 +99,6 @@
     </nav>
   </header>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  currentLevel: number
-  levelCount: number
-  playerName: string
-  isOnline: boolean
-  paused: boolean
-  muted: boolean
-  isFullscreen: boolean
-}>()
-
-defineEmits<{
-  'update:playerName': [value: string]
-  pause: []
-  restart: []
-  mute: []
-  fullscreen: []
-}>()
-</script>
 
 <style scoped>
 .topbar {

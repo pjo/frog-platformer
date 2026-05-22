@@ -1,3 +1,18 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+
+type Difficulty = 'easy' | 'normal' | 'hard'
+defineProps<{ playerName: string; playerEmail: string }>()
+defineEmits<{ start: [difficulty: Difficulty]; 'update:playerName': [value: string]; 'update:playerEmail': [value: string] }>()
+
+const difficulty = ref<Difficulty>('normal')
+const difficulties: { value: Difficulty; label: string }[] = [
+  { value: 'easy',   label: 'Easy'   },
+  { value: 'normal', label: 'Normal' },
+  { value: 'hard',   label: 'Hard'   },
+]
+</script>
+
 <template>
   <div class="start-overlay">
     <div class="start-card">
@@ -51,21 +66,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-
-type Difficulty = 'easy' | 'normal' | 'hard'
-defineProps<{ playerName: string; playerEmail: string }>()
-defineEmits<{ start: [difficulty: Difficulty]; 'update:playerName': [value: string]; 'update:playerEmail': [value: string] }>()
-
-const difficulty = ref<Difficulty>('normal')
-const difficulties: { value: Difficulty; label: string }[] = [
-  { value: 'easy',   label: 'Easy'   },
-  { value: 'normal', label: 'Normal' },
-  { value: 'hard',   label: 'Hard'   },
-]
-</script>
 
 <style scoped>
 .start-overlay {

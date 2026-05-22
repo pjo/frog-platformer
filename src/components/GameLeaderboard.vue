@@ -1,3 +1,25 @@
+<script setup lang="ts">
+import type { LeaderEntry } from '../levels/types'
+
+defineProps<{
+  leaderboard: LeaderEntry[]
+  highContrast: boolean
+  reduceMotion: boolean
+  uiScale: number
+}>()
+
+defineEmits<{
+  'update:highContrast': [value: boolean]
+  'update:reduceMotion': [value: boolean]
+  'update:uiScale': [value: number]
+}>()
+
+function formatTime(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+}
+</script>
+
 <template>
   <section class="bottom-grid">
     <!-- ── Scoreboard ──────────────────────────────────── -->
@@ -129,28 +151,6 @@
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import type { LeaderEntry } from '../levels/types'
-
-defineProps<{
-  leaderboard: LeaderEntry[]
-  highContrast: boolean
-  reduceMotion: boolean
-  uiScale: number
-}>()
-
-defineEmits<{
-  'update:highContrast': [value: boolean]
-  'update:reduceMotion': [value: boolean]
-  'update:uiScale': [value: number]
-}>()
-
-function formatTime(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000))
-  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
-}
-</script>
 
 <style scoped>
 .bottom-grid {

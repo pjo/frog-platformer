@@ -1,106 +1,3 @@
-<template>
-  <div class="game-shell" :class="{ 'high-contrast': highContrast }" :style="{ '--ui-scale': uiScale }">
-    <div class="sky-decor">
-      <div class="cloud c1"></div>
-      <div class="cloud c2"></div>
-      <div class="cloud c3"></div>
-    </div>
-
-    <GameTopbar
-      :currentLevel="currentLevel"
-      :levelCount="LEVEL_COUNT"
-      :playerName="playerName"
-      :isOnline="isOnline"
-      :paused="paused"
-      :muted="muted"
-      :isFullscreen="isFullscreen"
-      @update:playerName="playerName = $event"
-      @pause="togglePause"
-      @restart="resetGame"
-      @mute="toggleMute"
-      @fullscreen="toggleFullscreen"
-    />
-
-    <GameHud
-      :score="score"
-      :lives="lives"
-      :fliesCollected="fliesCollected"
-      :totalFlies="totalFlies"
-      :displayTime="displayTime"
-      :activePower="activePower"
-    />
-
-    <main class="stage card" ref="stageRef">
-      <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
-
-      <StartScreen v-if="!gameStarted" :playerName="playerName" :playerEmail="playerEmail" @update:playerName="playerName = $event" @update:playerEmail="playerEmail = $event" @start="startGame" />
-
-      <div v-if="scorePending && (gameOver || won)" class="score-status pending">
-        📧 Check your email — click the link to publish your score!
-      </div>
-      <div v-if="nameTaken && (gameOver || won)" class="score-status taken">
-        ⚠ This name is registered to a different email. Use a different name next time.
-      </div>
-
-      <div v-if="gameStarted" class="debug-input">
-        <span :class="{ active: dbgLeft }">←</span>
-        <span :class="{ active: dbgRight }">→</span>
-        <span :class="{ active: dbgJump }">↑</span>
-      </div>
-
-      <div v-if="gameStarted" class="mobile-controls">
-        <div class="mobile-left">
-          <button
-            class="mobile-btn"
-            @touchstart.prevent="mobileKey('ArrowLeft', true)"
-            @touchend.prevent="mobileKey('ArrowLeft', false)"
-            @touchcancel.prevent="mobileKey('ArrowLeft', false)"
-            @mousedown.prevent="mobileKey('ArrowLeft', true)"
-            @mouseup.prevent="mobileKey('ArrowLeft', false)"
-            @mouseleave.prevent="mobileKey('ArrowLeft', false)"
-          >&#9664;</button>
-          <button
-            class="mobile-btn"
-            @touchstart.prevent="mobileKey('ArrowRight', true)"
-            @touchend.prevent="mobileKey('ArrowRight', false)"
-            @touchcancel.prevent="mobileKey('ArrowRight', false)"
-            @mousedown.prevent="mobileKey('ArrowRight', true)"
-            @mouseup.prevent="mobileKey('ArrowRight', false)"
-            @mouseleave.prevent="mobileKey('ArrowRight', false)"
-          >&#9654;</button>
-        </div>
-        <div class="mobile-right">
-          <button
-            class="mobile-btn jump-btn"
-            @touchstart.prevent="mobileKey('Space', true)"
-            @touchend.prevent="mobileKey('Space', false)"
-            @touchcancel.prevent="mobileKey('Space', false)"
-            @mousedown.prevent="mobileKey('Space', true)"
-            @mouseup.prevent="mobileKey('Space', false)"
-            @mouseleave.prevent="mobileKey('Space', false)"
-          >JUMP</button>
-        </div>
-      </div>
-
-      <div class="controls-help">
-        <span>Move: &#8592; &#8594; / A D</span>
-        <span>Jump: Space / W / &#8593;</span>
-        <span>P: Pause &nbsp; M: Mute &nbsp; R: Restart &nbsp; F: Fullscreen</span>
-      </div>
-    </main>
-
-    <GameLeaderboard
-      :leaderboard="leaderboard"
-      :highContrast="highContrast"
-      :reduceMotion="reduceMotion"
-      :uiScale="uiScale"
-      @update:highContrast="highContrast = $event"
-      @update:reduceMotion="reduceMotion = $event"
-      @update:uiScale="uiScale = $event"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GameTopbar from './GameTopbar.vue'
@@ -418,12 +315,12 @@ function loseLife() {
   sfxHit()
   screenShake = 10
   burst(player.x + player.w/2, player.y + player.h/2, COLORS.PARTICLE_DAMAGE, 14, 5)
-  if (lives.value <= 0) { 
+  if (lives.value <= 0) {
     gameOver.value = true
     stopBgMusic()
     persistScore({ name: playerName.value || 'Player', score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
     submitScore()
-    return 
+    return
   }
   player.invincible = TIMERS.INVINCIBLE_HIT
   player.x = checkpoint.x; player.y = PLAYER_CFG.RESPAWN_Y
@@ -471,7 +368,7 @@ function update(dt: number) {
 // ── Render ─────────────────────────────────────────────────────────────────────
 function render() {
   if (!renderer || !engine) return
-  
+
   const ui: UIState = {
     won: won.value,
     gameOver: gameOver.value,
@@ -489,7 +386,7 @@ function render() {
 function onKeyDown(e: KeyboardEvent) {
   const target = e.target as HTMLElement
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
-  
+
   const codes = ['KeyP','KeyM','KeyR','KeyF']
   if (!codes.includes(e.code)) return
   e.preventDefault(); resumeAudio()
@@ -502,13 +399,13 @@ function onKeyDown(e: KeyboardEvent) {
 onMounted(async () => {
   engine = new Engine(canvasRef.value!)
   renderer = new Renderer(engine.ctx)
-  
+
   engine.onUpdate = update
   engine.onRender = render
-  
+
   spriteSheet = await buildSpriteSheet()
   renderer.spriteSheet = spriteSheet
-  
+
   loadLevel(1); resetEntities(true)
   engine.start()
   fetchScores()
@@ -526,6 +423,109 @@ onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>
+
+<template>
+  <div class="game-shell" :class="{ 'high-contrast': highContrast }" :style="{ '--ui-scale': uiScale }">
+    <div class="sky-decor">
+      <div class="cloud c1"></div>
+      <div class="cloud c2"></div>
+      <div class="cloud c3"></div>
+    </div>
+
+    <GameTopbar
+      :currentLevel="currentLevel"
+      :levelCount="LEVEL_COUNT"
+      :playerName="playerName"
+      :isOnline="isOnline"
+      :paused="paused"
+      :muted="muted"
+      :isFullscreen="isFullscreen"
+      @update:playerName="playerName = $event"
+      @pause="togglePause"
+      @restart="resetGame"
+      @mute="toggleMute"
+      @fullscreen="toggleFullscreen"
+    />
+
+    <GameHud
+      :score="score"
+      :lives="lives"
+      :fliesCollected="fliesCollected"
+      :totalFlies="totalFlies"
+      :displayTime="displayTime"
+      :activePower="activePower"
+    />
+
+    <main class="stage card" ref="stageRef">
+      <canvas ref="canvasRef" :width="VIEWPORT_W" :height="VIEWPORT_H"></canvas>
+
+      <StartScreen v-if="!gameStarted" :playerName="playerName" :playerEmail="playerEmail" @update:playerName="playerName = $event" @update:playerEmail="playerEmail = $event" @start="startGame" />
+
+      <div v-if="scorePending && (gameOver || won)" class="score-status pending">
+        📧 Check your email — click the link to publish your score!
+      </div>
+      <div v-if="nameTaken && (gameOver || won)" class="score-status taken">
+        ⚠ This name is registered to a different email. Use a different name next time.
+      </div>
+
+      <div v-if="gameStarted" class="debug-input">
+        <span :class="{ active: dbgLeft }">←</span>
+        <span :class="{ active: dbgRight }">→</span>
+        <span :class="{ active: dbgJump }">↑</span>
+      </div>
+
+      <div v-if="gameStarted" class="mobile-controls">
+        <div class="mobile-left">
+          <button
+            class="mobile-btn"
+            @touchstart.prevent="mobileKey('ArrowLeft', true)"
+            @touchend.prevent="mobileKey('ArrowLeft', false)"
+            @touchcancel.prevent="mobileKey('ArrowLeft', false)"
+            @mousedown.prevent="mobileKey('ArrowLeft', true)"
+            @mouseup.prevent="mobileKey('ArrowLeft', false)"
+            @mouseleave.prevent="mobileKey('ArrowLeft', false)"
+          >&#9664;</button>
+          <button
+            class="mobile-btn"
+            @touchstart.prevent="mobileKey('ArrowRight', true)"
+            @touchend.prevent="mobileKey('ArrowRight', false)"
+            @touchcancel.prevent="mobileKey('ArrowRight', false)"
+            @mousedown.prevent="mobileKey('ArrowRight', true)"
+            @mouseup.prevent="mobileKey('ArrowRight', false)"
+            @mouseleave.prevent="mobileKey('ArrowRight', false)"
+          >&#9654;</button>
+        </div>
+        <div class="mobile-right">
+          <button
+            class="mobile-btn jump-btn"
+            @touchstart.prevent="mobileKey('Space', true)"
+            @touchend.prevent="mobileKey('Space', false)"
+            @touchcancel.prevent="mobileKey('Space', false)"
+            @mousedown.prevent="mobileKey('Space', true)"
+            @mouseup.prevent="mobileKey('Space', false)"
+            @mouseleave.prevent="mobileKey('Space', false)"
+          >JUMP</button>
+        </div>
+      </div>
+
+      <div class="controls-help">
+        <span>Move: &#8592; &#8594; / A D</span>
+        <span>Jump: Space / W / &#8593;</span>
+        <span>P: Pause &nbsp; M: Mute &nbsp; R: Restart &nbsp; F: Fullscreen</span>
+      </div>
+    </main>
+
+    <GameLeaderboard
+      :leaderboard="leaderboard"
+      :highContrast="highContrast"
+      :reduceMotion="reduceMotion"
+      :uiScale="uiScale"
+      @update:highContrast="highContrast = $event"
+      @update:reduceMotion="reduceMotion = $event"
+      @update:uiScale="uiScale = $event"
+    />
+  </div>
+</template>
 
 <style scoped>
 :global(body) { margin: 0; background: #0f172a; }

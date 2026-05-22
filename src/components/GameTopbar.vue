@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import frogLogo from '../assets/frog-logo.svg'
+
 defineProps<{
   currentLevel: number
   levelCount: number
@@ -21,38 +23,7 @@ defineEmits<{
 <template>
   <header class="topbar card">
     <div class="brand">
-      <svg class="logo" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <!-- Frog body -->
-        <ellipse cx="20" cy="24" rx="13" ry="10" fill="#22c55e"/>
-        <!-- Frog belly -->
-        <ellipse cx="20" cy="26" rx="8" ry="6" fill="#86efac"/>
-        <!-- Left eye dome -->
-        <circle cx="12" cy="14" r="7" fill="#4ade80"/>
-        <!-- Right eye dome -->
-        <circle cx="28" cy="14" r="7" fill="#4ade80"/>
-        <!-- Left eye white -->
-        <circle cx="12" cy="13" r="4.5" fill="#fff"/>
-        <!-- Right eye white -->
-        <circle cx="28" cy="13" r="4.5" fill="#fff"/>
-        <!-- Left pupil -->
-        <circle cx="13" cy="12.5" r="2.2" fill="#0f172a"/>
-        <!-- Right pupil -->
-        <circle cx="29" cy="12.5" r="2.2" fill="#0f172a"/>
-        <!-- Left pupil highlight -->
-        <circle cx="14" cy="11.5" r="0.8" fill="#fff"/>
-        <!-- Right pupil highlight -->
-        <circle cx="30" cy="11.5" r="0.8" fill="#fff"/>
-        <!-- Mouth -->
-        <path d="M14 28 Q20 32 26 28" stroke="#166534" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <!-- Left cheek -->
-        <circle cx="13" cy="27" r="2" fill="#fb923c" opacity="0.35"/>
-        <!-- Right cheek -->
-        <circle cx="27" cy="27" r="2" fill="#fb923c" opacity="0.35"/>
-        <!-- Left foot -->
-        <ellipse cx="10" cy="33" rx="4" ry="2.2" fill="#16a34a"/>
-        <!-- Right foot -->
-        <ellipse cx="30" cy="33" rx="4" ry="2.2" fill="#16a34a"/>
-      </svg>
+      <img :src="frogLogo" class="logo" aria-hidden="true" />
       <div class="title-group">
         <div class="brand-title">Frog<span class="vs"> vs. </span>Smurf Invaders</div>
       </div>

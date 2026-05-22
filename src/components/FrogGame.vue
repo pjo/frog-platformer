@@ -13,6 +13,7 @@ import { Renderer, type UIState } from '../engine/Renderer'
 import { Physics } from '../engine/Physics'
 import type { GameState } from '../engine/GameState'
 import { ENGINE, PLAYER_CFG, TIMERS, SCORING, COLORS } from '../utils/constants'
+import { getScores, postScore } from '../api/scores'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const VIEWPORT_W = ENGINE.VIEWPORT_W
@@ -100,17 +101,10 @@ const leaderboard = computed<LeaderEntry[]>(() => {
 })
 
 async function fetchScores() {
-  try {
-    const res = await fetch('/api/scores')
-    if (!res.ok) throw new Error()
-    const data: LeaderEntry[] = await res.json()
-    remoteScores.value = data
-    isOnline.value = true
-  } catch {
-    isOnline.value = false
-  } finally {
-    loadingScores.value = false
-  }
+  const data = await getScores()
+  if (data) { remoteScores.value = data; isOnline.value = true }
+  else { isOnline.value = false }
+  loadingScores.value = false
 }
 
 async function submitScore() {
@@ -118,25 +112,16 @@ async function submitScore() {
   const name = playerName.value.trim() || 'Player'
   const email = playerEmail.value.trim()
   if (!email || !email.includes('@')) return
-  try {
-    const res = await fetch('/api/scores', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, score: score.value, flies: fliesCollected.value, time: elapsedMs.value }),
-    })
-    if (res.status === 403) { nameTaken.value = true; return }
-    if (!res.ok) throw new Error()
-    const data = await res.json() as { status: 'pending' | 'updated'; scores?: LeaderEntry[] }
-    if (data.status === 'pending') {
-      scorePending.value = true
-      scoreSubmitted.value = true
-    } else if (data.status === 'updated') {
-      if (data.scores) remoteScores.value = data.scores
-      isOnline.value = true
-      scoreSubmitted.value = true
-    }
-  } catch {
-    isOnline.value = false
+  const result = await postScore({ name, email, score: score.value, flies: fliesCollected.value, time: elapsedMs.value })
+  if (result.status === 'nameTaken') { nameTaken.value = true; return }
+  if (result.status === 'error') { isOnline.value = false; return }
+  if (result.status === 'pending') {
+    scorePending.value = true
+    scoreSubmitted.value = true
+  } else if (result.status === 'updated') {
+    remoteScores.value = result.scores
+    isOnline.value = true
+    scoreSubmitted.value = true
   }
 }
 

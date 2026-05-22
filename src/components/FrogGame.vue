@@ -126,12 +126,12 @@ async function submitScore() {
     })
     if (res.status === 403) { nameTaken.value = true; return }
     if (!res.ok) throw new Error()
-    const data = await res.json()
+    const data = await res.json() as { status: 'pending' | 'updated'; scores?: LeaderEntry[] }
     if (data.status === 'pending') {
       scorePending.value = true
       scoreSubmitted.value = true
     } else if (data.status === 'updated') {
-      remoteScores.value = data.scores
+      if (data.scores) remoteScores.value = data.scores
       isOnline.value = true
       scoreSubmitted.value = true
     }
